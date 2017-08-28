@@ -25,9 +25,9 @@ handleOutputAdd output = do
     mode <- listToMaybe <$> getModes output
     putStr "Possible modes: "
     print mode
---    case mode of
---        Nothing -> pure ()
---        Just x -> setOutputMode x output
+    case mode of
+        Nothing -> pure ()
+        Just x -> setOutputMode x output
 
 handleInputAdd :: Ptr InputDevice -> IO ()
 handleInputAdd ptr = do
