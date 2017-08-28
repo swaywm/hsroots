@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Graphics.Wayland.WlRoots.Util.List
     ( WlrList(..)
     )
@@ -5,7 +6,7 @@ where
 
 #include <wlr/util/list.h>
 
-import Foreign.Ptr (plusPtr)
+import Foreign.Ptr (Ptr, plusPtr)
 import Foreign.Storable (Storable(..))
 import Control.Monad (forM)
 
@@ -21,8 +22,10 @@ instance Storable a => Storable (WlrList a) where
     peek ptr = do
         cap <- #{peek list_t, capacity} ptr
         len <- #{peek list_t, length} ptr
-        content <- forM [0.. (fromIntegral cap) - 1] $ \num -> do
-            let array = #{ptr list_t, items} ptr
-            peekElemOff array num
+        let array :: Ptr (Ptr (Ptr a)) = #{ptr list_t, items} ptr
+        lptr :: Ptr (Ptr a) <- peek array
+        content <- forM [0.. (fromIntegral len) - 1] $ \num -> do
+            eptr :: Ptr a <- peekElemOff lptr num
+            peek eptr
         pure (WlrList cap len content)
     poke = error "We don't poke lists, sorry"
