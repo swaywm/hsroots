@@ -22,17 +22,15 @@ handleOutputAdd output = do
     name <- getName output
     putStrLn name
 
-    mode <- listToMaybe <$> getModes output
+    modes <- getModes output
     putStr "Possible modes: "
-    print mode
-    case mode of
+    print modes
+    case listToMaybe modes of
         Nothing -> pure ()
         Just x -> setOutputMode x output
 
 handleInputAdd :: Ptr InputDevice -> IO ()
 handleInputAdd ptr = do
-    putStr "Got some input o.0"
-    print ptr
     putStr "Found a new input of type: "
     print =<< inputDeviceType ptr
 
