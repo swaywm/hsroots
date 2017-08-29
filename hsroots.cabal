@@ -77,10 +77,11 @@ library
   -- Base language which the package is written in.
   default-language:    Haskell2010
   ghc-options:         -Wall
-  Extra-libraries: wlroots
-  Extra-libraries: wayland-server
 
-  c-sources: cbits/signal.c
+  Extra-libraries:     wlroots
+  Extra-libraries:     wayland-server
+
+  c-sources:           cbits/signal.c
 
 executable rotate
   -- .hs or .lhs file containing the Main module.
@@ -90,7 +91,7 @@ executable rotate
   -- Modules included in this executable, other than Main.
   -- other-modules:
 
-  other-modules: 
+  other-modules:        Cat
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
@@ -105,3 +106,5 @@ executable rotate
   default-language:    Haskell2010
 
   ghc-options:         -Wall
+  c-sources:           cbits/cat.c
+  Include-dirs:        cbits

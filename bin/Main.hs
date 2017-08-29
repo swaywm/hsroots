@@ -1,4 +1,6 @@
-
+import Cat (getCatTexture)
+import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
+import Graphics.Wayland.WlRoots.Render.Gles2 (rendererCreate)
 import Data.Maybe (listToMaybe)
 import Foreign.Ptr (Ptr)
 import Graphics.Wayland.WlRoots.Backend
@@ -8,12 +10,20 @@ import Graphics.Wayland.WlRoots.Backend
 import Graphics.Wayland.WlRoots.Output (Output, getName, getModes, setOutputMode)
 import Graphics.Wayland.WlRoots.Input (InputDevice, inputDeviceType)
 
-import Graphics.Wayland.Server (displayCreate)
+import Graphics.Wayland.Server (displayCreate, displayRun)
 import Graphics.Wayland.Signal
 
 import System.IO
 
 data Handlers = Handlers ListenerToken ListenerToken ListenerToken ListenerToken
+
+data CatRenderer = CatRenderer (Ptr Renderer) (Ptr Texture)
+
+getCatRenderer :: Ptr Backend -> IO (CatRenderer)
+getCatRenderer backend = do
+    renderer <- rendererCreate backend
+    texture <- getCatTexture renderer
+    pure $ CatRenderer renderer texture
 
 handleOutputAdd :: Ptr Output -> IO ()
 handleOutputAdd output = do
@@ -51,6 +61,11 @@ main = do
     handlers <- addSignalHandlers backend
 
     backendStart backend
+
+    renderer <- getCatRenderer backend
+
+    displayRun display
+
     let Handlers h1 h2 h3 h4 = handlers
     removeListener h1
     removeListener h2
