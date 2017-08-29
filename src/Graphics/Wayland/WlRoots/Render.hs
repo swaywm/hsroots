@@ -6,13 +6,14 @@ module Graphics.Wayland.WlRoots.Render
     , renderWithMatrix
     , bufferIsDrm
     , rendererDestroy
+    , uploadPixels
     )
 where
 
 import Graphics.Wayland.Server (Buffer)
 import Foreign.Ptr (Ptr)
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
-import Foreign.C.Types (CFloat(..))
+import Foreign.C.Types (CFloat(..), CInt(..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 
 data Renderer
@@ -44,4 +45,11 @@ foreign import ccall unsafe "wlr_renderer_destroy" c_renderer_destroy :: Ptr Ren
 rendererDestroy :: Ptr Renderer -> IO ()
 rendererDestroy = c_renderer_destroy
 
+--bool wlr_texture_upload_pixels(struct wlr_texture *tex,
+--		enum wl_shm_format format, int stride, int width, int height,
+--		const unsigned char *pixels);
+foreign import ccall unsafe "wlr_texture_upload_pixels" c_upload_pixels :: Ptr Texture -> CInt -> CInt -> CInt -> CInt -> Ptr a -> IO Bool
 
+uploadPixels :: Ptr Texture -> Int -> Int -> Int -> Int -> Ptr a -> IO ()
+uploadPixels tex format strice width height pixels = 
+    throwErrnoIf_ not "uploadPixels" $ c_upload_pixels tex (fromIntegral format) (fromIntegral strice) (fromIntegral width) (fromIntegral height) pixels
