@@ -85,11 +85,13 @@ handleOutputAdd cat output = do
     putStrLn name
 
     modes <- getModes output
-    putStr "Possible modes: "
-    print modes
+    hPutStr stderr "Possible modes: "
+    hPutStrLn stderr $ show modes
+    hPutStrLn stderr "Going to set mode"
     case listToMaybe modes of
         Nothing -> pure ()
         Just x -> setOutputMode x output
+    hPutStrLn stderr "Set mode"
 
     ref <- newIORef (OutputState 0 0)
 
