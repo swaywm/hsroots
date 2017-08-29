@@ -3,10 +3,17 @@ module Graphics.Wayland.WlRoots.Render
     ( Renderer
     , Texture
     , textureCreate
+
+    , getMatrix
     , renderWithMatrix
     , bufferIsDrm
     , rendererDestroy
     , uploadPixels
+
+    , rendererBegin
+    , rendererEnd
+
+    , doRender
     )
 where
 
@@ -15,15 +22,41 @@ import Foreign.Ptr (Ptr)
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Foreign.C.Types (CFloat(..), CInt(..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
+import Graphics.Wayland.WlRoots.Output (Output)
+import Control.Exception (bracket_)
 
 data Renderer
 data Texture
+
+foreign import ccall unsafe "wlr_renderer_begin" c_renderer_begin :: Ptr Renderer -> Ptr Output -> IO ()
+
+rendererBegin :: Ptr Renderer -> Ptr Output -> IO ()
+rendererBegin = c_renderer_begin
+
+
+foreign import ccall unsafe "wlr_renderer_end" c_renderer_end :: Ptr Renderer -> IO ()
+
+rendererEnd :: Ptr Renderer -> IO ()
+rendererEnd = c_renderer_end
+
+
+doRender :: Ptr Renderer -> Ptr Output -> IO a -> IO a
+doRender renderer output = bracket_
+    (rendererBegin renderer output)
+    (rendererEnd renderer)
 
 
 foreign import ccall unsafe "wlr_render_texture_create" c_texture_create :: Ptr Renderer -> IO (Ptr Texture)
 
 textureCreate :: Ptr Renderer -> IO (Ptr Texture)
 textureCreate = throwErrnoIfNull "textureCreate" . c_texture_create
+
+
+foreign import ccall unsafe "wlr_texture_get_matrix" c_get_matrix :: Ptr Texture -> Matrix -> Matrix -> CInt -> CInt -> IO ()
+
+getMatrix :: Ptr Texture -> Matrix -> Matrix -> Int -> Int -> IO ()
+getMatrix tex matrix projection x y =
+    c_get_matrix tex matrix projection (fromIntegral x) (fromIntegral y)
 
 
 foreign import ccall unsafe "wlr_render_with_matrix" c_render_with_matrix :: Ptr Renderer -> Ptr Texture -> Ptr CFloat -> IO Bool

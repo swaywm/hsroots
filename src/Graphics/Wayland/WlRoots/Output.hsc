@@ -16,6 +16,10 @@ module Graphics.Wayland.WlRoots.Output
 
     , getName
     , getModes
+    , getTransMatrix
+
+    , OutputSignals(..)
+    , getOutputSignals
     )
 where
 
@@ -31,6 +35,8 @@ import Foreign.C.Error (throwErrnoIf_)
 import Foreign.C.Types (CInt(..))
 
 import Graphics.Wayland.WlRoots.Util.List (WlrList(..))
+import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
+import Graphics.Wayland.Signal (WlSignal)
 
 data Output
 
@@ -114,3 +120,22 @@ getModes ptr = do
     listptr <- #{peek struct wlr_output, modes} ptr
     wlrlist <- peek listptr
     pure $ items wlrlist
+
+getTransMatrix :: Ptr Output -> Matrix
+getTransMatrix = 
+    Matrix . #{ptr struct wlr_output, transform_matrix}
+
+data OutputSignals = OutputSignals
+    { outSignalFrame :: Ptr (WlSignal ())
+    , outSignalResolution :: Ptr (WlSignal ())
+    }
+
+getOutputSignals :: Ptr Output -> OutputSignals
+getOutputSignals ptr = 
+    let frame      = #{ptr struct wlr_output, events.frame} ptr
+        resolution = #{ptr struct wlr_output, events.resolution} ptr
+     in OutputSignals
+         { outSignalFrame = frame
+         , outSignalResolution = resolution
+         }
+
