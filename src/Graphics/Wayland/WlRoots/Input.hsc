@@ -16,34 +16,33 @@ where
 
 #include <wlr/types/wlr_input_device.h>
 
-import Foreign.Ptr (Ptr)
+import Foreign.Ptr (Ptr, castPtr)
 import Foreign.C.Types (CInt)
 import Foreign.Storable (Storable(..))
+import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard)
 
 data DeviceType
-    = DeviceKeyboard
-    | DevicePointer
-    | DeviceTouch
-    | DeviceTabletTool
-    | DeviceTabletPad
-    deriving (Eq, Show, Read)
+    = DeviceKeyboard (Ptr WlrKeyboard)
+    | DevicePointer (Ptr ())
+    | DeviceTouch (Ptr ())
+    | DeviceTabletTool (Ptr ())
+    | DeviceTabletPad (Ptr ())
+    deriving (Eq, Show)
 
 deviceTypeToInt :: Num a => DeviceType -> a
-deviceTypeToInt DeviceKeyboard   = #{const WLR_INPUT_DEVICE_KEYBOARD}
-deviceTypeToInt DevicePointer    = #{const WLR_INPUT_DEVICE_POINTER}
-deviceTypeToInt DeviceTouch      = #{const WLR_INPUT_DEVICE_TOUCH}
-deviceTypeToInt DeviceTabletTool = #{const WLR_INPUT_DEVICE_TABLET_TOOL}
-deviceTypeToInt DeviceTabletPad  = #{const WLR_INPUT_DEVICE_TABLET_PAD}
+deviceTypeToInt (DeviceKeyboard   _) = #{const WLR_INPUT_DEVICE_KEYBOARD}
+deviceTypeToInt (DevicePointer    _) = #{const WLR_INPUT_DEVICE_POINTER}
+deviceTypeToInt (DeviceTouch      _) = #{const WLR_INPUT_DEVICE_TOUCH}
+deviceTypeToInt (DeviceTabletTool _) = #{const WLR_INPUT_DEVICE_TABLET_TOOL}
+deviceTypeToInt (DeviceTabletPad  _) = #{const WLR_INPUT_DEVICE_TABLET_PAD}
 
-intToDeviceType :: (Eq a, Num a, Show a) => a -> DeviceType
-intToDeviceType #{const WLR_INPUT_DEVICE_KEYBOARD}    = DeviceKeyboard
-intToDeviceType #{const WLR_INPUT_DEVICE_POINTER}     = DevicePointer
-intToDeviceType #{const WLR_INPUT_DEVICE_TOUCH}       = DeviceTouch
-intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_TOOL} = DeviceTabletTool
-intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_PAD}  = DeviceTabletPad
+intToDeviceType :: (Eq a, Num a, Show a) => a -> Ptr b -> DeviceType
+intToDeviceType #{const WLR_INPUT_DEVICE_KEYBOARD}    = DeviceKeyboard . castPtr
+intToDeviceType #{const WLR_INPUT_DEVICE_POINTER}     = DevicePointer . castPtr
+intToDeviceType #{const WLR_INPUT_DEVICE_TOUCH}       = DeviceTouch . castPtr
+intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_TOOL} = DeviceTabletTool . castPtr
+intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_PAD}  = DeviceTabletPad . castPtr
 intToDeviceType x = error $ "Got an unknown DeviceType: " ++ show x
-
-
 
 data ButtonState
     = ButtonReleased
@@ -65,4 +64,5 @@ data InputDevice
 inputDeviceType :: Ptr InputDevice -> IO DeviceType
 inputDeviceType ptr = do
     int :: CInt <- #{peek struct wlr_input_device, type} ptr
-    pure $ intToDeviceType int
+    devptr <- #{peek struct wlr_input_device, _device} ptr
+    pure $ intToDeviceType int devptr

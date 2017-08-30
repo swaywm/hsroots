@@ -34,8 +34,17 @@ import Graphics.Wayland.WlRoots.Output
     , getOutputSignals
     , getDataPtr
     )
-import Graphics.Wayland.WlRoots.Input (InputDevice, inputDeviceType)
-
+import Graphics.Wayland.WlRoots.Input
+    ( InputDevice
+    , inputDeviceType
+    , DeviceType(..)
+    )
+import Graphics.Wayland.WlRoots.Input.Keyboard
+    ( WlrKeyboard
+    , KeyboardSignals (..)
+    , getKeySignals
+    , getKeyDataPtr
+    )
 import Graphics.Wayland.Server (displayCreate, displayRun)
 import Graphics.Wayland.Signal
 
@@ -121,10 +130,27 @@ handleOutputAdd cat output = do
     sptr <- newStablePtr handler
     poke (getDataPtr output) (castStablePtrToPtr sptr)
 
+handleKeyPress :: Ptr () -> IO ()
+handleKeyPress ptr = do
+    hPutStr stderr "Some key was pressed"
+    hPutStrLn stderr $ show ptr
+
+handleKeyboardAdd :: Ptr WlrKeyboard -> IO ()
+handleKeyboardAdd ptr = do
+    let signals = getKeySignals ptr
+    handler <- addListener (WlListener handleKeyPress) (keySignalKey signals)
+    sptr <- newStablePtr handler
+    poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
+    pure ()
+
 handleInputAdd :: Ptr InputDevice -> IO ()
 handleInputAdd ptr = do
     putStr "Found a new input of type: "
-    print =<< inputDeviceType ptr
+    iType <- inputDeviceType ptr
+    print iType
+    case iType of
+        (DeviceKeyboard kptr) -> handleKeyboardAdd kptr
+        _ -> pure ()
 
 addSignalHandlers :: IORef CatRenderer -> Ptr Backend -> IO Handlers
 addSignalHandlers cref ptr =
