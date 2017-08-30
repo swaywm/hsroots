@@ -21,6 +21,8 @@ module Graphics.Wayland.WlRoots.Output
     , OutputSignals(..)
     , getOutputSignals
     , getDataPtr
+
+    , transformOutput
     )
 where
 
@@ -38,6 +40,7 @@ import Foreign.C.Types (CInt(..))
 import Graphics.Wayland.WlRoots.Util.List (WlrList(..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.Signal (WlSignal)
+import Graphics.Wayland.Server (OutputTransform(..))
 
 data Output
 
@@ -82,6 +85,13 @@ moveCurosr :: Ptr Output -> Int -> Int -> IO ()
 moveCurosr ptr x y =
     throwErrnoIf_ not "moveCursor" $ c_move_cursor ptr (fromIntegral x) (fromIntegral y)
 
+--void wlr_output_transform(struct wlr_output *output,
+--		enum wl_output_transform transform);
+foreign import ccall unsafe "wlr_output_transform" c_output_transform :: Ptr Output -> CInt -> IO ()
+
+transformOutput :: Ptr Output -> OutputTransform -> IO ()
+transformOutput ptr (OutputTransform x) =
+    c_output_transform ptr (fromIntegral x)
 
 
 data OutputMode = OutputMode
