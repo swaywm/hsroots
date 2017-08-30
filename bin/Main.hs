@@ -1,7 +1,7 @@
 {-# LANGUAGE NumDecimals #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-import Foreign.StablePtr
-import Foreign.Storable
+import Foreign.StablePtr (newStablePtr, castStablePtrToPtr)
+import Foreign.Storable (Storable(peek, poke))
 import Data.IORef (IORef, readIORef, modifyIORef, newIORef, writeIORef)
 import Cat (getCatTexture)
 import Graphics.Wayland.WlRoots.Render
@@ -12,6 +12,10 @@ import Graphics.Wayland.WlRoots.Render
     , renderWithMatrix
     )
 import System.Clock
+    ( toNanoSecs
+    , getTime
+    , Clock(Monotonic)
+    )
 import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix)
 import Graphics.Wayland.WlRoots.Render.Gles2 (rendererCreate)
 import Data.Maybe (listToMaybe)
@@ -54,6 +58,11 @@ import Graphics.Wayland.Server
     , displayTerminate
     )
 import Graphics.Wayland.Signal
+    ( addListener
+    , WlListener (..)
+    , ListenerToken
+    , removeListener
+    )
 
 import Text.XkbCommon.Keymap
 import Text.XkbCommon.Keysym
@@ -67,7 +76,7 @@ import Control.Monad (forM_, when)
 import Control.Exception (bracket_)
 import Data.List (intercalate)
 
-import System.IO
+import System.IO (hPutStr, hPutStrLn, stderr)
 
 
 keyStateToDirection :: KeyState -> Direction
