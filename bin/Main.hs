@@ -121,24 +121,17 @@ getCatRenderer backend = do
 
 handleOutputAdd :: IORef CatRenderer -> Ptr Output -> IO ()
 handleOutputAdd cat output = do
-    hPutStrLn stderr "Got an output"
     putStr "Found output: "
-    name <- getName output
-    putStrLn name
+    putStrLn =<< getName output
 
     modes <- getModes output
-    hPutStr stderr "Possible modes: "
-    hPutStrLn stderr $ show modes
-    hPutStrLn stderr "Going to set mode"
     case listToMaybe modes of
         Nothing -> pure ()
         Just x -> setOutputMode x output
-    hPutStrLn stderr "Set mode"
 
     ref <- newIORef (OutputState 0 0 0)
 
     let signals = getOutputSignals output
-    -- TODO: This should be StablePtr into output data
     handler <- addListener (WlListener (\_ -> frameHandler ref cat output)) (outSignalFrame signals)
 
     sptr <- newStablePtr handler
