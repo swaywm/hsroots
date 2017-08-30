@@ -37,6 +37,8 @@ import Graphics.Wayland.WlRoots.Output
     , OutputSignals(..)
     , getOutputSignals
     , getDataPtr
+
+    , transformOutput
     )
 import Graphics.Wayland.WlRoots.Input
     ( InputDevice
@@ -56,6 +58,7 @@ import Graphics.Wayland.Server
     , displayCreate
     , displayRun
     , displayTerminate
+    , outputTransform180
     )
 import Graphics.Wayland.Signal
     ( addListener
@@ -142,6 +145,7 @@ handleOutputAdd cat output = do
 
     let signals = getOutputSignals output
     handler <- addListener (WlListener (\_ -> frameHandler ref cat output)) (outSignalFrame signals)
+    transformOutput output outputTransform180
 
     sptr <- newStablePtr handler
     poke (getDataPtr output) (castStablePtrToPtr sptr)
