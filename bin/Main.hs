@@ -44,14 +44,29 @@ import Graphics.Wayland.WlRoots.Input.Keyboard
     , KeyboardSignals (..)
     , getKeySignals
     , getKeyDataPtr
+    , EventKey (..)
+    , KeyState (..)
     )
 import Graphics.Wayland.Server (displayCreate, displayRun)
 import Graphics.Wayland.Signal
 
+import Text.XkbCommon.Keymap
+import Text.XkbCommon.Keysym
+import Text.XkbCommon.Types
+import Text.XkbCommon.Context
+import Text.XkbCommon.KeyboardState
+import Text.XkbCommon.KeycodeList
+
 import Control.Monad (forM_)
 import Control.Exception (bracket_)
+import Data.List (intercalate)
 
 import System.IO
+
+
+keyStateToDirection :: KeyState -> Direction
+keyStateToDirection KeyReleased = keyUp
+keyStateToDirection KeyPressed  = keyDown
 
 data Handlers = Handlers ListenerToken ListenerToken ListenerToken ListenerToken
 data OutputState = OutputState
@@ -80,20 +95,13 @@ frameHandler ref cref output = do
     -- All offsets in the 2 dimensional plane
     let zs = [ (x, y) | x <- xs, y<- ys]
 
-    pre <- toNanoSecs <$> getTime Monotonic
     renderOn output rend $ withMatrix $ \matrix -> forM_ zs $ \(x, y) -> do
         getMatrix tex matrix (getTransMatrix output) x y
         renderWithMatrix rend tex matrix
-    post <- toNanoSecs <$> getTime Monotonic
-
-    hPutStr stderr "Rendering frame took:"
-    hPutStrLn stderr $ show $ (post - pre) `div` 10e6
 
     time <- toNanoSecs <$> getTime Monotonic
     let timeDiff = time - lastFrame state
-
     let secs :: Double = fromIntegral timeDiff / 1e9
-
     let adjust = floor $ 128 * secs
 
     modifyIORef ref (\(OutputState x y _) -> OutputState ((x + adjust) `mod` 128) ((y + adjust) `mod` 128) time)
@@ -130,15 +138,24 @@ handleOutputAdd cat output = do
     sptr <- newStablePtr handler
     poke (getDataPtr output) (castStablePtrToPtr sptr)
 
-handleKeyPress :: Ptr () -> IO ()
-handleKeyPress ptr = do
-    hPutStr stderr "Some key was pressed"
-    hPutStrLn stderr $ show ptr
+handleKeyPress :: KeyboardState -> Ptr EventKey -> IO ()
+handleKeyPress keyState ptr = do
+    hPutStr stderr "Some key was pressed: "
+    event <- peek ptr
+    let keycode = fromEvdev . fromIntegral . keyCode $ event
+    syms <- getStateSyms keyState keycode
+    _ <- updateKeyboardStateKey keyState keycode (keyStateToDirection $ state event)
+    hPutStrLn stderr . intercalate "," $ map keysymName syms
 
 handleKeyboardAdd :: Ptr WlrKeyboard -> IO ()
 handleKeyboardAdd ptr = do
     let signals = getKeySignals ptr
-    handler <- addListener (WlListener handleKeyPress) (keySignalKey signals)
+
+    (Just cxt) <- newContext defaultFlags
+    (Just keymap) <- newKeymapFromNames cxt noPrefs
+    keyState <- newKeyboardState keymap
+
+    handler <- addListener (WlListener $ handleKeyPress keyState) (keySignalKey signals)
     sptr <- newStablePtr handler
     poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
     pure ()
