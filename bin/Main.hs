@@ -47,7 +47,12 @@ import Graphics.Wayland.WlRoots.Input.Keyboard
     , EventKey (..)
     , KeyState (..)
     )
-import Graphics.Wayland.Server (displayCreate, displayRun)
+import Graphics.Wayland.Server
+    ( DisplayServer
+    , displayCreate
+    , displayRun
+    , displayTerminate
+    )
 import Graphics.Wayland.Signal
 
 import Text.XkbCommon.Keymap
@@ -56,8 +61,9 @@ import Text.XkbCommon.Types
 import Text.XkbCommon.Context
 import Text.XkbCommon.KeyboardState
 import Text.XkbCommon.KeycodeList
+import Text.XkbCommon.KeysymList
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Control.Exception (bracket_)
 import Data.List (intercalate)
 
@@ -138,42 +144,44 @@ handleOutputAdd cat output = do
     sptr <- newStablePtr handler
     poke (getDataPtr output) (castStablePtrToPtr sptr)
 
-handleKeyPress :: KeyboardState -> Ptr EventKey -> IO ()
-handleKeyPress keyState ptr = do
+handleKeyPress :: DisplayServer -> KeyboardState -> Ptr EventKey -> IO ()
+handleKeyPress dsp keyState ptr = do
     hPutStr stderr "Some key was pressed: "
     event <- peek ptr
     let keycode = fromEvdev . fromIntegral . keyCode $ event
     syms <- getStateSyms keyState keycode
     _ <- updateKeyboardStateKey keyState keycode (keyStateToDirection $ state event)
     hPutStrLn stderr . intercalate "," $ map keysymName syms
+    forM_ syms $ \sym -> do
+        when (sym == keysym_Escape) (displayTerminate dsp)
 
-handleKeyboardAdd :: Ptr WlrKeyboard -> IO ()
-handleKeyboardAdd ptr = do
+handleKeyboardAdd :: DisplayServer -> Ptr WlrKeyboard -> IO ()
+handleKeyboardAdd dsp ptr = do
     let signals = getKeySignals ptr
 
     (Just cxt) <- newContext defaultFlags
     (Just keymap) <- newKeymapFromNames cxt noPrefs
     keyState <- newKeyboardState keymap
 
-    handler <- addListener (WlListener $ handleKeyPress keyState) (keySignalKey signals)
+    handler <- addListener (WlListener $ handleKeyPress dsp keyState) (keySignalKey signals)
     sptr <- newStablePtr handler
     poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
     pure ()
 
-handleInputAdd :: Ptr InputDevice -> IO ()
-handleInputAdd ptr = do
+handleInputAdd :: DisplayServer -> Ptr InputDevice -> IO ()
+handleInputAdd dsp ptr = do
     putStr "Found a new input of type: "
     iType <- inputDeviceType ptr
     print iType
     case iType of
-        (DeviceKeyboard kptr) -> handleKeyboardAdd kptr
+        (DeviceKeyboard kptr) -> handleKeyboardAdd dsp kptr
         _ -> pure ()
 
-addSignalHandlers :: IORef CatRenderer -> Ptr Backend -> IO Handlers
-addSignalHandlers cref ptr =
+addSignalHandlers :: DisplayServer -> IORef CatRenderer -> Ptr Backend -> IO Handlers
+addSignalHandlers dsp cref ptr =
     let signals = backendGetSignals ptr
      in Handlers
-        <$> addListener (WlListener handleInputAdd) (inputAdd signals)
+        <$> addListener (WlListener $ handleInputAdd dsp) (inputAdd signals)
         <*> addListener (WlListener (\_ -> putStrLn "Lost an input")) (inputRemove signals)
         <*> addListener (WlListener (handleOutputAdd cref)) (outputAdd signals)
         <*> addListener (WlListener (\_ -> putStrLn "Lost an output")) (outputRemove signals)
@@ -184,7 +192,7 @@ main = do
     display <- displayCreate
     backend <- backendAutocreate display
 
-    handlers <- addSignalHandlers catRef backend
+    handlers <- addSignalHandlers display catRef backend
 
     backendStart backend
 
