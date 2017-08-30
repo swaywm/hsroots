@@ -13,7 +13,7 @@ import Control.Monad (forM)
 data WlrList a = WlrList
     { capacity :: Word
     , length :: Word
-    , items :: [a]
+    , items :: [Ptr a]
     }
 
 instance Storable a => Storable (WlrList a) where
@@ -25,7 +25,6 @@ instance Storable a => Storable (WlrList a) where
         let array :: Ptr (Ptr (Ptr a)) = #{ptr list_t, items} ptr
         lptr :: Ptr (Ptr a) <- peek array
         content <- forM [0.. (fromIntegral len) - 1] $ \num -> do
-            eptr :: Ptr a <- peekElemOff lptr num
-            peek eptr
+            peekElemOff lptr num
         pure (WlrList cap len content)
     poke = error "We don't poke lists, sorry"

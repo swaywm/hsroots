@@ -1,3 +1,7 @@
+{-# LANGUAGE NumDecimals #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+import Foreign.StablePtr
+import Foreign.Storable
 import Data.IORef (IORef, readIORef, modifyIORef, newIORef, writeIORef)
 import Cat (getCatTexture)
 import Graphics.Wayland.WlRoots.Render
@@ -7,6 +11,7 @@ import Graphics.Wayland.WlRoots.Render
     , getMatrix
     , renderWithMatrix
     )
+import System.Clock
 import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix)
 import Graphics.Wayland.WlRoots.Render.Gles2 (rendererCreate)
 import Data.Maybe (listToMaybe)
@@ -27,13 +32,14 @@ import Graphics.Wayland.WlRoots.Output
 
     , OutputSignals(..)
     , getOutputSignals
+    , getDataPtr
     )
 import Graphics.Wayland.WlRoots.Input (InputDevice, inputDeviceType)
 
 import Graphics.Wayland.Server (displayCreate, displayRun)
 import Graphics.Wayland.Signal
 
-import Control.Monad (forM_, void)
+import Control.Monad (forM_)
 import Control.Exception (bracket_)
 
 import System.IO
@@ -42,6 +48,7 @@ data Handlers = Handlers ListenerToken ListenerToken ListenerToken ListenerToken
 data OutputState = OutputState
     { xOffset :: Int
     , yOffset :: Int
+    , lastFrame :: Integer
     }
 
 data CatRenderer = CatRenderer (Ptr Renderer) (Ptr Texture)
@@ -64,11 +71,23 @@ frameHandler ref cref output = do
     -- All offsets in the 2 dimensional plane
     let zs = [ (x, y) | x <- xs, y<- ys]
 
+    pre <- toNanoSecs <$> getTime Monotonic
     renderOn output rend $ withMatrix $ \matrix -> forM_ zs $ \(x, y) -> do
         getMatrix tex matrix (getTransMatrix output) x y
         renderWithMatrix rend tex matrix
+    post <- toNanoSecs <$> getTime Monotonic
 
-    modifyIORef ref (\(OutputState x y) -> OutputState (x + 16) (y + 16))
+    hPutStr stderr "Rendering frame took:"
+    hPutStrLn stderr $ show $ (post - pre) `div` 10e6
+
+    time <- toNanoSecs <$> getTime Monotonic
+    let timeDiff = time - lastFrame state
+
+    let secs :: Double = fromIntegral timeDiff / 1e9
+
+    let adjust = floor $ 128 * secs
+
+    modifyIORef ref (\(OutputState x y _) -> OutputState ((x + adjust) `mod` 128) ((y + adjust) `mod` 128) time)
 
 
 getCatRenderer :: Ptr Backend -> IO (CatRenderer)
@@ -93,11 +112,14 @@ handleOutputAdd cat output = do
         Just x -> setOutputMode x output
     hPutStrLn stderr "Set mode"
 
-    ref <- newIORef (OutputState 0 0)
+    ref <- newIORef (OutputState 0 0 0)
 
     let signals = getOutputSignals output
     -- TODO: This should be StablePtr into output data
-    void $ addListener (WlListener (\_ -> frameHandler ref cat output)) (outSignalFrame signals)
+    handler <- addListener (WlListener (\_ -> frameHandler ref cat output)) (outSignalFrame signals)
+
+    sptr <- newStablePtr handler
+    poke (getDataPtr output) (castStablePtrToPtr sptr)
 
 handleInputAdd :: Ptr InputDevice -> IO ()
 handleInputAdd ptr = do

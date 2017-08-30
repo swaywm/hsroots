@@ -20,6 +20,7 @@ module Graphics.Wayland.WlRoots.Output
 
     , OutputSignals(..)
     , getOutputSignals
+    , getDataPtr
     )
 where
 
@@ -107,15 +108,15 @@ instance Storable OutputMode where
 
 foreign import ccall unsafe "wlr_output_set_mode" c_set_mode :: Ptr Output -> Ptr OutputMode -> IO Bool
 
-setOutputMode :: OutputMode -> Ptr Output -> IO ()
-setOutputMode mode ptr = with mode $ \mptr ->
+setOutputMode :: Ptr OutputMode -> Ptr Output -> IO ()
+setOutputMode mptr ptr = 
     throwErrnoIf_ not "setOutputMode" $ c_set_mode ptr mptr
 
 
 getName :: Ptr Output -> IO String
 getName = peekCString . #{ptr struct wlr_output, name}
 
-getModes :: Ptr Output -> IO [OutputMode]
+getModes :: Ptr Output -> IO [Ptr OutputMode]
 getModes ptr = do
     listptr <- #{peek struct wlr_output, modes} ptr
     wlrlist <- peek listptr
@@ -139,3 +140,5 @@ getOutputSignals ptr =
          , outSignalResolution = resolution
          }
 
+getDataPtr :: Ptr Output -> Ptr (Ptr a)
+getDataPtr = #{ptr struct wlr_output, data}
