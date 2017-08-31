@@ -49,6 +49,8 @@ cabal-version:       >=1.10
 library
   -- Modules exported by the library.
   exposed-modules:     Graphics.Wayland.WlRoots.Backend
+  exposed-modules:     Graphics.Wayland.WlRoots.Backend.Session
+  exposed-modules:     Graphics.Wayland.WlRoots.Backend.Multi
   exposed-modules:     Graphics.Wayland.WlRoots.Render
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Matrix
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Gles2

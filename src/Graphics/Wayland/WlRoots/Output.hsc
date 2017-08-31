@@ -29,7 +29,6 @@ where
 #include <wlr/types/wlr_output.h>
 
 import Foreign.C.String (peekCString)
-import Foreign.Marshal.Utils (with)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr, plusPtr)

@@ -18,6 +18,8 @@ import Foreign.Ptr (Ptr)
 import Data.Maybe (listToMaybe)
 import Foreign.StablePtr (newStablePtr, castStablePtrToPtr)
 import Data.IORef (IORef, readIORef, newIORef, writeIORef)
+import Graphics.Wayland.WlRoots.Backend.Multi (getSession')
+import Graphics.Wayland.WlRoots.Backend.Session (changeVT)
 import Graphics.Wayland.WlRoots.Backend
     ( Backend, backendAutocreate, backendStart
     , BackendSignals(..), backendGetSignals
@@ -86,7 +88,7 @@ data CompHooks = CompHooks
 
     , inputAddHook :: Ptr InputDevice -> IO ()
     , outputAddHook :: Ptr Output -> IO FrameHandler
-    , keyPressHook :: Keysym -> IO ()
+    , keyPressHook :: Keysym -> Direction -> IO ()
     }
 
 
@@ -97,7 +99,7 @@ ignoreHooks = CompHooks
     , backendPostHook = \_ -> pure ()
     , inputAddHook = \_ -> pure ()
     , outputAddHook = \_ -> pure $ \_ _ -> pure ()
-    , keyPressHook = \_ -> pure ()
+    , keyPressHook = \_ _ -> pure ()
     }
 
 
@@ -112,39 +114,60 @@ handleFrame hook ref output = do
 
     hook secs output
 
-handleKeyPress :: CompHooks -> DisplayServer -> KeyboardState -> Ptr EventKey -> IO ()
-handleKeyPress hooks dsp keyState ptr = do
+switchVT :: Ptr Backend -> Word -> IO ()
+switchVT backend vt = do
+    mSession <- getSession' backend
+    case mSession of
+        Nothing -> pure ()
+        Just s -> changeVT s vt
+
+handleKeyPress :: CompHooks -> DisplayServer -> Ptr Backend -> KeyboardState -> Ptr EventKey -> IO ()
+handleKeyPress hooks dsp backend keyState ptr = do
     hPutStr stderr "Some key was pressed: "
     event <- peek ptr
     let keycode = fromEvdev . fromIntegral . keyCode $ event
     syms <- getStateSyms keyState keycode
-    _ <- updateKeyboardStateKey keyState keycode (keyStateToDirection $ state event)
+    let keyDir = (keyStateToDirection $ state event)
+    _ <- updateKeyboardStateKey keyState keycode keyDir
     hPutStrLn stderr . intercalate "," $ map keysymName syms
     forM_ syms $ \sym -> do
         case sym of
             Keysym_Escape -> displayTerminate dsp
-            _ -> keyPressHook hooks sym
+            -- Would be cooler if this wasn't a listing of VTs (probably TH)
+            Keysym_XF86Switch_VT_1  -> switchVT backend 1
+            Keysym_XF86Switch_VT_2  -> switchVT backend 2
+            Keysym_XF86Switch_VT_3  -> switchVT backend 3
+            Keysym_XF86Switch_VT_4  -> switchVT backend 4
+            Keysym_XF86Switch_VT_5  -> switchVT backend 5
+            Keysym_XF86Switch_VT_6  -> switchVT backend 6
+            Keysym_XF86Switch_VT_7  -> switchVT backend 7
+            Keysym_XF86Switch_VT_8  -> switchVT backend 8
+            Keysym_XF86Switch_VT_9  -> switchVT backend 9
+            Keysym_XF86Switch_VT_10 -> switchVT backend 10
+            Keysym_XF86Switch_VT_11 -> switchVT backend 11
+            Keysym_XF86Switch_VT_12 -> switchVT backend 12
+            _ -> keyPressHook hooks sym keyDir
 
-handleKeyboardAdd :: CompHooks -> DisplayServer -> Ptr WlrKeyboard -> IO ()
-handleKeyboardAdd hooks dsp ptr = do
+handleKeyboardAdd :: CompHooks -> DisplayServer -> Ptr Backend -> Ptr WlrKeyboard -> IO ()
+handleKeyboardAdd hooks dsp backend ptr = do
     let signals = getKeySignals ptr
 
     (Just cxt) <- newContext defaultFlags
     (Just keymap) <- newKeymapFromNames cxt noPrefs
     keyState <- newKeyboardState keymap
 
-    handler <- addListener (WlListener $ handleKeyPress hooks dsp keyState) (keySignalKey signals)
+    handler <- addListener (WlListener $ handleKeyPress hooks dsp backend keyState) (keySignalKey signals)
     sptr <- newStablePtr handler
     poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
     pure ()
 
-handleInputAdd :: CompHooks -> DisplayServer -> Ptr InputDevice -> IO ()
-handleInputAdd hooks dsp ptr = do
+handleInputAdd :: CompHooks -> DisplayServer -> Ptr Backend -> Ptr InputDevice -> IO ()
+handleInputAdd hooks dsp backend ptr = do
     putStr "Found a new input of type: "
     iType <- inputDeviceType ptr
     print iType
     case iType of
-        (DeviceKeyboard kptr) -> handleKeyboardAdd hooks dsp kptr
+        (DeviceKeyboard kptr) -> handleKeyboardAdd hooks dsp backend kptr
         _ -> pure ()
     inputAddHook hooks ptr
 
@@ -170,7 +193,7 @@ addSignalHandlers :: CompHooks -> DisplayServer -> Ptr Backend -> IO Handlers
 addSignalHandlers hooks dsp ptr =
     let signals = backendGetSignals ptr
      in Handlers
-        <$> addListener (WlListener $ handleInputAdd hooks dsp) (inputAdd signals)
+        <$> addListener (WlListener $ handleInputAdd hooks dsp ptr) (inputAdd signals)
         <*> addListener (WlListener (\_ -> putStrLn "Lost an input")) (inputRemove signals)
         <*> addListener (WlListener $ handleOutputAdd hooks) (outputAdd signals)
         <*> addListener (WlListener (\_ -> putStrLn "Lost an output")) (outputRemove signals)
