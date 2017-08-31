@@ -93,6 +93,7 @@ executable rotate
   -- other-modules:
 
   other-modules:        Cat
+  other-modules:        Shared
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
