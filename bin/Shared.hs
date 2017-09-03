@@ -16,7 +16,12 @@ import System.Clock
 import Foreign.Storable (Storable(peek, poke))
 import Foreign.Ptr (Ptr)
 import Data.Maybe (listToMaybe)
-import Foreign.StablePtr (newStablePtr, castStablePtrToPtr)
+import Foreign.StablePtr
+    ( newStablePtr
+    , castStablePtrToPtr
+    , freeStablePtr
+    , castPtrToStablePtr
+    )
 import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Graphics.Wayland.WlRoots.Backend.Multi (getSession')
 import Graphics.Wayland.WlRoots.Backend.Session (changeVT)
@@ -159,7 +164,6 @@ handleKeyboardAdd hooks dsp backend ptr = do
     handler <- addListener (WlListener $ handleKeyPress hooks dsp backend keyState) (keySignalKey signals)
     sptr <- newStablePtr handler
     poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
-    pure ()
 
 handleInputAdd :: CompHooks -> DisplayServer -> Ptr Backend -> Ptr InputDevice -> IO ()
 handleInputAdd hooks dsp backend ptr = do
@@ -170,6 +174,18 @@ handleInputAdd hooks dsp backend ptr = do
         (DeviceKeyboard kptr) -> handleKeyboardAdd hooks dsp backend kptr
         _ -> pure ()
     inputAddHook hooks ptr
+
+handleKeyboardRemove :: Ptr WlrKeyboard -> IO ()
+handleKeyboardRemove ptr = do
+    sptr <- peek (getKeyDataPtr ptr)
+    freeStablePtr $ castPtrToStablePtr sptr
+
+handleInputRemove :: CompHooks -> Ptr InputDevice -> IO ()
+handleInputRemove _ ptr = do
+    iType <- inputDeviceType ptr
+    case iType of
+        (DeviceKeyboard kptr) -> handleKeyboardRemove kptr
+        _ -> pure ()
 
 handleOutputAdd :: CompHooks -> Ptr Output -> IO ()
 handleOutputAdd hooks output = do
@@ -189,14 +205,20 @@ handleOutputAdd hooks output = do
     sptr <- newStablePtr handler
     poke (getDataPtr output) (castStablePtrToPtr sptr)
 
+handleOutputRemove :: compHooks -> Ptr Output -> IO ()
+handleOutputRemove _ output = do
+    sptr :: Ptr () <- peek (getDataPtr output)
+    freeStablePtr $ castPtrToStablePtr sptr
+
+
 addSignalHandlers :: CompHooks -> DisplayServer -> Ptr Backend -> IO Handlers
 addSignalHandlers hooks dsp ptr =
     let signals = backendGetSignals ptr
      in Handlers
         <$> addListener (WlListener $ handleInputAdd hooks dsp ptr) (inputAdd signals)
-        <*> addListener (WlListener (\_ -> putStrLn "Lost an input")) (inputRemove signals)
+        <*> addListener (WlListener $ handleInputRemove hooks) (inputRemove signals)
         <*> addListener (WlListener $ handleOutputAdd hooks) (outputAdd signals)
-        <*> addListener (WlListener (\_ -> putStrLn "Lost an output")) (outputRemove signals)
+        <*> addListener (WlListener $ handleOutputRemove hooks ) (outputRemove signals)
 
 launchCompositor :: CompHooks -> IO ()
 launchCompositor hooks = do

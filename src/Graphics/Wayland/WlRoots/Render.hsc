@@ -14,9 +14,13 @@ module Graphics.Wayland.WlRoots.Render
     , rendererEnd
 
     , doRender
+    , isTextureValid
     )
 where
 
+#include <wlr/render.h>
+
+import Foreign.Storable (Storable(..))
 import Graphics.Wayland.Server (Buffer)
 import Foreign.Ptr (Ptr)
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
@@ -86,3 +90,8 @@ foreign import ccall unsafe "wlr_texture_upload_pixels" c_upload_pixels :: Ptr T
 uploadPixels :: Ptr Texture -> Int -> Int -> Int -> Int -> Ptr a -> IO ()
 uploadPixels tex format strice width height pixels = 
     throwErrnoIf_ not "uploadPixels" $ c_upload_pixels tex (fromIntegral format) (fromIntegral strice) (fromIntegral width) (fromIntegral height) pixels
+
+
+isTextureValid :: Ptr Texture -> IO Bool
+isTextureValid tex =
+    #{peek struct wlr_texture, valid} tex

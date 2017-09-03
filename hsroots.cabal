@@ -48,19 +48,27 @@ cabal-version:       >=1.10
 
 library
   -- Modules exported by the library.
+  exposed-modules:     Graphics.Egl
+  exposed-modules:     Graphics.Wayland.List
+  exposed-modules:     Graphics.Wayland.Resource
+  exposed-modules:     Graphics.Wayland.Signal
   exposed-modules:     Graphics.Wayland.WlRoots.Backend
-  exposed-modules:     Graphics.Wayland.WlRoots.Backend.Session
   exposed-modules:     Graphics.Wayland.WlRoots.Backend.Multi
-  exposed-modules:     Graphics.Wayland.WlRoots.Render
-  exposed-modules:     Graphics.Wayland.WlRoots.Render.Matrix
-  exposed-modules:     Graphics.Wayland.WlRoots.Render.Gles2
+  exposed-modules:     Graphics.Wayland.WlRoots.Backend.Session
+  exposed-modules:     Graphics.Wayland.WlRoots.Compositor
+  exposed-modules:     Graphics.Wayland.WlRoots.DeviceManager
   exposed-modules:     Graphics.Wayland.WlRoots.Egl
-  exposed-modules:     Graphics.Wayland.WlRoots.Output
   exposed-modules:     Graphics.Wayland.WlRoots.Input
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Keyboard
+  exposed-modules:     Graphics.Wayland.WlRoots.Output
+  exposed-modules:     Graphics.Wayland.WlRoots.Render
+  exposed-modules:     Graphics.Wayland.WlRoots.Render.Gles2
+  exposed-modules:     Graphics.Wayland.WlRoots.Render.Matrix
+  exposed-modules:     Graphics.Wayland.WlRoots.Shell
+  exposed-modules:     Graphics.Wayland.WlRoots.Surface
   exposed-modules:     Graphics.Wayland.WlRoots.Util.List
-  exposed-modules:     Graphics.Wayland.Signal
-  exposed-modules:     Graphics.Egl
+  exposed-modules:     Graphics.Wayland.WlRoots.XWayland
+  exposed-modules:     Graphics.Wayland.WlRoots.XdgShell
   
   -- Modules included in this library but not exported.
   -- other-modules:       
@@ -88,13 +96,40 @@ library
 
 executable rotate
   -- .hs or .lhs file containing the Main module.
-  main-is:             Main.hs
+  main-is:             Rotate.hs
   hs-source-dirs:      bin
 
   -- Modules included in this executable, other than Main.
   -- other-modules:
 
   other-modules:        Cat
+  other-modules:        Shared
+
+  -- LANGUAGE extensions used by modules in this package.
+  -- other-extensions:
+
+  -- Other library packages from which modules are imported.
+  build-depends:       base >=4.6.0.1 && <5, hsroots, hayland, clock, xkbcommon
+
+  -- Directories containing source files.
+  -- hs-source-dirs:
+
+  -- Base language which the package is written in.
+  default-language:    Haskell2010
+
+  ghc-options:         -Wall -with-rtsopts=-V0
+  c-sources:           cbits/cat.c
+  Include-dirs:        cbits
+
+
+executable compositor
+  -- .hs or .lhs file containing the Main module.
+  main-is:             Compositor.hs
+  hs-source-dirs:      bin
+
+  -- Modules included in this executable, other than Main.
+  -- other-modules:
+
   other-modules:        Shared
 
   -- LANGUAGE extensions used by modules in this package.
