@@ -53,7 +53,7 @@ import Graphics.Wayland.WlRoots.Input.Keyboard
     , KeyState (..)
     )
 import Graphics.Wayland.Server
-    ( DisplayServer
+    ( DisplayServer (..)
     , displayCreate
     , displayRun
     , displayTerminate
@@ -68,6 +68,10 @@ import Text.XkbCommon.Context
 import Text.XkbCommon.KeyboardState
 import Text.XkbCommon.KeycodeList
 import Text.XkbCommon.KeysymPatterns
+
+import Foreign.C.Types (CChar)
+import Foreign.C.String
+import System.Environment (setEnv)
 
 import Control.Monad (forM_)
 
@@ -220,6 +224,8 @@ addSignalHandlers hooks dsp ptr =
         <*> addListener (WlListener $ handleOutputAdd hooks) (outputAdd signals)
         <*> addListener (WlListener $ handleOutputRemove hooks ) (outputRemove signals)
 
+foreign import ccall "wl_display_add_socket_auto" c_add_socket :: Ptr DisplayServer -> IO (Ptr CChar)
+
 launchCompositor :: CompHooks -> IO ()
 launchCompositor hooks = do
     display <- displayCreate
@@ -227,6 +233,12 @@ launchCompositor hooks = do
 
     backend <- backendAutocreate display
     handlers <- addSignalHandlers hooks display backend
+
+    socket <- (\(DisplayServer ptr) -> c_add_socket ptr) display
+    sName <- peekCString socket
+    hPutStr stderr "Opened on socket: "
+    hPutStrLn stderr sName
+    setEnv "_WAYLAND_DISPLAY" sName
 
     backendPreHook hooks backend
     backendStart backend

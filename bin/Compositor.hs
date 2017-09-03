@@ -1,6 +1,9 @@
 module Main
 where
 
+
+import System.Posix.Process
+-- import Control.Concurrent (myThreadId, {-runInBoundThread-})
 import Foreign.Ptr (Ptr)
 import Data.IORef (newIORef, IORef, writeIORef, readIORef)
 
@@ -52,8 +55,13 @@ import Graphics.Wayland.WlRoots.Surface
 import Graphics.Wayland.Server (displayInitShm, DisplayServer, callbackDone)
 
 import Control.Exception (bracket_)
-import Control.Monad (void, when)
+import Control.Monad (void, when, forM_)
+
+import System.IO
 import Shared
+
+
+foreign import ccall "pthread_self" myThreadId :: IO (Ptr ())
 
 renderOn :: Ptr Output -> Ptr Renderer -> IO a -> IO a
 renderOn output rend act = bracket_ 
@@ -69,23 +77,28 @@ data Compositor = Compositor
     , compXdg :: Ptr WlrXdgShell
     , compManager :: Ptr WlrDeviceManager
     , compXWayland :: Ptr XWayland
+    , compBackend :: Ptr Backend
     }
 
 outputHandleSurface :: Compositor -> Double -> Ptr Output -> Ptr WlrSurface -> IO ()
 outputHandleSurface comp secs output surface = do
+    hPutStr stderr "Got a surface: "
+    hPutStrLn stderr $ show surface
     flushDamage surface
     texture <- surfaceGetTexture surface
     isValid <- isTextureValid texture
     when isValid $ withMatrix $ \trans -> do
         matrixTranslate trans 200 200 0
-        withSurfaceMatrix surface (getTransMatrix output) trans $
-            renderWithMatrix (compRenderer comp) texture
-        -- Add the callback calling
+        withSurfaceMatrix surface (getTransMatrix output) trans $ \mat -> do
+            hPutStrLn stderr . show =<< myThreadId
+            renderWithMatrix (compRenderer comp) texture mat
+
         callbacks <- surfaceGetCallbacks surface
-        cbs <- mapM callbackGetCallback callbacks
-        mapM_ (flip callbackDone (floor $ secs * 1000)) cbs
-        ress <- mapM callbackGetResource callbacks
-        mapM_ resourceDestroy ress
+        forM_ callbacks $ \callback -> do
+            cb <- callbackGetCallback callback
+            callbackDone cb (floor $ secs * 1000)
+            res <- callbackGetResource callback
+            resourceDestroy res
 
 
 frameHandler :: IORef Compositor -> Double -> Ptr Output -> IO ()
@@ -101,20 +114,33 @@ frameHandler compRef secs output = do
         mapM_ (outputHandleSurface comp secs output) surfaces
 
 
-
 makeCompositor :: DisplayServer -> Ptr Backend -> IO Compositor
 makeCompositor display backend = do
-    void $ displayInitShm display
+    hPutStrLn stderr . show =<< myThreadId
+    hPutStrLn stderr . show $ backend
     renderer <- rendererCreate backend
-    comp <- compositorCreate display backend
+    hPutStrLn stderr . show $ renderer
+    void $ displayInitShm display
+    comp <- compositorCreate display renderer
     shell <- shellCreate display
     xdgShell <- xdgShellCreate display
     devManager <- managerCreate display
     xway <- xwaylandCreate display comp
-    pure $ Compositor display renderer comp shell xdgShell devManager xway
+    pure $ Compositor
+        { compDisplay = display
+        , compRenderer = renderer
+        , compCompositor = comp
+        , compShell = shell
+        , compXdg = xdgShell
+        , compManager = devManager
+        , compXWayland = xway
+        , compBackend = backend
+        }
 
-main :: IO ()
-main = do
+
+realMain :: IO ()
+realMain = do
+    hPutStrLn stderr . show =<< getProcessID
     dpRef <- newIORef undefined
     compRef <- newIORef undefined
     launchCompositor ignoreHooks
@@ -125,3 +151,6 @@ main = do
         , outputAddHook = \_ -> pure $ frameHandler compRef
         }
     pure ()
+
+main :: IO ()
+main = realMain

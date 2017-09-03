@@ -137,6 +137,7 @@ executable compositor
 
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.6.0.1 && <5, hsroots, hayland, clock, xkbcommon
+  build-depends:       unix
 
   -- Directories containing source files.
   -- hs-source-dirs:

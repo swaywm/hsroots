@@ -10,13 +10,15 @@ where
 import Foreign.Storable (peekByteOff)
 import Foreign.Ptr (Ptr, plusPtr)
 
+import System.IO
+
 data WlList
 
 getListElems' :: Ptr WlList -> Ptr WlList -> IO [Ptr WlList]
 getListElems' listHead current
     | listHead == current = pure []
     | otherwise = do
-        nxt <- #{peek struct wl_list, next} listHead
+        nxt <- #{peek struct wl_list, next} current
         (current :) <$> getListElems' listHead nxt
 
 

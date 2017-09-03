@@ -1,4 +1,5 @@
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Graphics.Wayland.WlRoots.Render
     ( Renderer
     , Texture
@@ -19,6 +20,8 @@ module Graphics.Wayland.WlRoots.Render
 where
 
 #include <wlr/render.h>
+
+import System.IO
 
 import Foreign.Storable (Storable(..))
 import Graphics.Wayland.Server (Buffer)
@@ -69,8 +72,6 @@ renderWithMatrix :: Ptr Renderer -> Ptr Texture -> Matrix -> IO ()
 renderWithMatrix r t (Matrix m) = throwErrnoIf_ not "renderWithMatrix" $ c_render_with_matrix r t m
 
 
---foreign import ccall unsafe "wlr_render_colored_quad" c_render_colored_quad :: Ptr Renderer -> Ptr CFloat -> Ptr CFloat -> IO ()
-
 foreign import ccall unsafe "wlr_renderer_buffer_is_drm" c_buffer_is_drm :: Ptr Renderer -> Ptr Buffer -> IO Bool
 
 bufferIsDrm :: Ptr Renderer -> Ptr Buffer -> IO Bool
@@ -82,9 +83,7 @@ foreign import ccall unsafe "wlr_renderer_destroy" c_renderer_destroy :: Ptr Ren
 rendererDestroy :: Ptr Renderer -> IO ()
 rendererDestroy = c_renderer_destroy
 
---bool wlr_texture_upload_pixels(struct wlr_texture *tex,
---		enum wl_shm_format format, int stride, int width, int height,
---		const unsigned char *pixels);
+
 foreign import ccall unsafe "wlr_texture_upload_pixels" c_upload_pixels :: Ptr Texture -> CInt -> CInt -> CInt -> CInt -> Ptr a -> IO Bool
 
 uploadPixels :: Ptr Texture -> Int -> Int -> Int -> Int -> Ptr a -> IO ()
@@ -93,5 +92,8 @@ uploadPixels tex format strice width height pixels =
 
 
 isTextureValid :: Ptr Texture -> IO Bool
-isTextureValid tex =
-    #{peek struct wlr_texture, valid} tex
+isTextureValid tex = do
+    ret :: CInt <- #{peek struct wlr_texture, valid} tex
+    hPutStr stderr "Valid: "
+    hPutStrLn stderr  $ show ret
+    pure (ret /= 0)
