@@ -161,13 +161,17 @@ handleCursorMotionAbs ref event_ptr = do
     state <- readIORef ref
     event <- peek event_ptr
 
+    image <- peek =<< fmap head (getImages $ stateXCursor state)
+    let x = (floor $ eventPointerAbsMotionX event) - xCursorImageHotspotX image
+    let y = (floor $ eventPointerAbsMotionY event) - xCursorImageHotspotY image
+
     loutputs <- layoutGetOutputs (stateLayout state)
     forM_ loutputs $ \lout -> do
         output <- layoutOutputGetOutput lout
         O.moveCursor
             output
-            (floor $ eventPointerAbsMotionX event)
-            (floor $ eventPointerAbsMotionY event)
+            (fromIntegral x)
+            (fromIntegral y)
 
 
 handleCursorButton :: IORef PointerState -> Ptr WlrEventPointerButton -> IO ()
