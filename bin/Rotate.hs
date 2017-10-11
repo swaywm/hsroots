@@ -102,5 +102,5 @@ main = do
     launchCompositor ignoreHooks
         { backendPostHook = \backend -> writeIORef stateRef =<< getInitialState backend
         , outputAddHook = handleOutputAdd stateRef
-          , keyPressHook = handleKeyPress stateRef
+        , keyPressHook = handleKeyPress stateRef
         }

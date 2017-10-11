@@ -23,6 +23,7 @@ module Graphics.Wayland.WlRoots.Output
     , getDataPtr
 
     , transformOutput
+    , setCursor
     )
 where
 
@@ -151,3 +152,10 @@ getOutputSignals ptr =
 
 getDataPtr :: Ptr Output -> Ptr (Ptr a)
 getDataPtr = #{ptr struct wlr_output, data}
+
+
+foreign import ccall "wlr_output_set_cursor" c_set_cursor :: Ptr Output -> Ptr () -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO Bool
+
+setCursor :: Ptr Output -> Ptr () -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+setCursor output buffer strice width height hotspot_x hotspot_y =
+    throwErrnoIf_ not "setCursor" $ c_set_cursor output buffer strice width height hotspot_x hotspot_y

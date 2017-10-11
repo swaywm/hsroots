@@ -3,7 +3,7 @@ module Graphics.Wayland.WlRoots.XWayland
     ( XWayland
     , xwaylandCreate
 
-    , X11Window
+    , X11Surface
     , getXWindows
     , x11WindowGetSurface
     )
@@ -27,13 +27,13 @@ xwaylandCreate :: DisplayServer -> Ptr WlrCompositor -> IO (Ptr XWayland)
 xwaylandCreate (DisplayServer ptr) comp =
     throwErrnoIfNull "xwaylandCreate" $ c_xwayland_create ptr comp
 
-data X11Window
+data X11Surface
 
-getXWindows :: Ptr XWayland -> IO [Ptr X11Window]
+getXWindows :: Ptr XWayland -> IO [Ptr X11Surface]
 getXWindows xway = 
-    let list = #{ptr struct wlr_xwayland, displayable_windows} xway
-     in getListFromHead list #{offset struct wlr_x11_window, link}
+    let list = #{ptr struct wlr_xwayland, displayable_surfaces} xway
+     in getListFromHead list #{offset struct wlr_xwayland_surface, link}
 
-x11WindowGetSurface :: Ptr X11Window -> IO (Ptr WlrSurface)
+x11WindowGetSurface :: Ptr X11Surface -> IO (Ptr WlrSurface)
 x11WindowGetSurface =
-    fmap getUserData . #{peek struct wlr_x11_window, surface}
+    fmap getUserData . #{peek struct wlr_xwayland_surface, surface}

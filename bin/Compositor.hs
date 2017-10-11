@@ -51,6 +51,7 @@ import Graphics.Wayland.WlRoots.Surface
     , callbackGetResource
     , surfaceGetCallbacks
     , callbackGetCallback
+    , getPendingState
     )
 import Graphics.Wayland.Server (displayInitShm, DisplayServer, callbackDone)
 
@@ -93,7 +94,7 @@ outputHandleSurface comp secs output surface = do
             hPutStrLn stderr . show =<< myThreadId
             renderWithMatrix (compRenderer comp) texture mat
 
-        callbacks <- surfaceGetCallbacks surface
+        callbacks <- surfaceGetCallbacks =<< getPendingState surface
         forM_ callbacks $ \callback -> do
             cb <- callbackGetCallback callback
             callbackDone cb (floor $ secs * 1000)

@@ -20,10 +20,12 @@ import Foreign.Ptr (Ptr, castPtr)
 import Foreign.C.Types (CInt)
 import Foreign.Storable (Storable(..))
 import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard)
+import Graphics.Wayland.WlRoots.Input.Pointer (WlrPointer)
+import Graphics.Wayland.WlRoots.Input.Buttons
 
 data DeviceType
     = DeviceKeyboard (Ptr WlrKeyboard)
-    | DevicePointer (Ptr ())
+    | DevicePointer (Ptr WlrPointer)
     | DeviceTouch (Ptr ())
     | DeviceTabletTool (Ptr ())
     | DeviceTabletPad (Ptr ())
@@ -43,21 +45,6 @@ intToDeviceType #{const WLR_INPUT_DEVICE_TOUCH}       = DeviceTouch . castPtr
 intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_TOOL} = DeviceTabletTool . castPtr
 intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_PAD}  = DeviceTabletPad . castPtr
 intToDeviceType x = error $ "Got an unknown DeviceType: " ++ show x
-
-data ButtonState
-    = ButtonReleased
-    | ButtonPressed
-    deriving (Eq, Show, Read)
-
-buttonStateToInt :: Num a => ButtonState -> a
-buttonStateToInt ButtonReleased = #{const WLR_BUTTON_RELEASED}
-buttonStateToInt ButtonPressed = #{const WLR_BUTTON_PRESSED}
-
-intToButtonState :: (Eq a, Num a, Show a) => a -> ButtonState
-intToButtonState #{const WLR_BUTTON_RELEASED} = ButtonReleased
-intToButtonState #{const WLR_BUTTON_PRESSED}  = ButtonPressed
-intToButtonState x = error $ "Got an an unknown ButtonState: " ++ show x
-
 
 data InputDevice
 

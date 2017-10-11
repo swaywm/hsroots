@@ -33,9 +33,9 @@ xdgShellCreate (DisplayServer ptr) =
 data WlrXdgSurface
 
 xdgShellGetSurfaces :: Ptr WlrXdgShell -> IO [Ptr WlrXdgSurface]
-xdgShellGetSurfaces shell =
-    let list = #{ptr struct wlr_xdg_shell_v6, surfaces} shell
-     in getListFromHead list #{offset struct wlr_xdg_surface_v6, link}
+xdgShellGetSurfaces shell = pure []
+--    let list = #{ptr struct wlr_xdg_shell_v6, surfaces} shell
+--     in getListFromHead list #{offset struct wlr_xdg_surface_v6, link}
 
 xdgSurfaceGetSurface :: Ptr WlrXdgSurface -> IO (Ptr WlrSurface)
 xdgSurfaceGetSurface =

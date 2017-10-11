@@ -60,7 +60,10 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Egl
   exposed-modules:     Graphics.Wayland.WlRoots.Input
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Keyboard
+  exposed-modules:     Graphics.Wayland.WlRoots.Input.Pointer
+  exposed-modules:     Graphics.Wayland.WlRoots.Input.Buttons
   exposed-modules:     Graphics.Wayland.WlRoots.Output
+  exposed-modules:     Graphics.Wayland.WlRoots.OutputLayout
   exposed-modules:     Graphics.Wayland.WlRoots.Render
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Gles2
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Matrix
@@ -69,6 +72,9 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Util.List
   exposed-modules:     Graphics.Wayland.WlRoots.XWayland
   exposed-modules:     Graphics.Wayland.WlRoots.XdgShell
+  exposed-modules:     Graphics.Wayland.WlRoots.XCursor
+  exposed-modules:     Graphics.Wayland.WlRoots.Cursor
+  exposed-modules:     Graphics.Wayland.WlRoots.Box
   
   -- Modules included in this library but not exported.
   -- other-modules:       
@@ -93,6 +99,7 @@ library
   Extra-libraries:     wayland-server
 
   c-sources:           cbits/signal.c
+  PkgConfig-Depends:   pixman-1
 
 executable rotate
   -- .hs or .lhs file containing the Main module.
@@ -122,9 +129,9 @@ executable rotate
   Include-dirs:        cbits
 
 
-executable compositor
+executable pointer
   -- .hs or .lhs file containing the Main module.
-  main-is:             Compositor.hs
+  main-is:             Pointer.hs
   hs-source-dirs:      bin
 
   -- Modules included in this executable, other than Main.
@@ -148,4 +155,5 @@ executable compositor
   ghc-options:         -Wall -with-rtsopts=-V0
   c-sources:           cbits/cat.c
   Include-dirs:        cbits
+  PkgConfig-Depends:   glesv2
 
