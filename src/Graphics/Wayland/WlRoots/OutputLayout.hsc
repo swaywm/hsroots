@@ -7,6 +7,9 @@ module Graphics.Wayland.WlRoots.OutputLayout
     , layoutGetOutput
     , layoutAtPos
 
+    , layoutOutputGetOutput
+    , layoutGetOutputs
+
     , addOutput
     , moveOutput
     , removeOutput
@@ -19,14 +22,17 @@ module Graphics.Wayland.WlRoots.OutputLayout
     )
 where
 
-import Foreign.Ptr (Ptr, nullPtr)
+#include <wlr/types/wlr_output_layout.h>
+
+import Foreign.Ptr (Ptr, nullPtr, plusPtr)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CInt(..))
 import Foreign.Marshal.Alloc (alloca)
-import Foreign.Storable (Storable(peek))
+import Foreign.Storable (Storable(peek, peekByteOff))
 import Data.Composition ((.:))
 
 import Graphics.Wayland.WlRoots.Output (Output)
+import Graphics.Wayland.List (getListFromHead)
 
 data WlrOutputLayout
 
@@ -48,6 +54,13 @@ foreign import ccall "wlr_output_layout_get" c_layout_get :: Ptr WlrOutputLayout
 
 layoutGetOutput :: Ptr WlrOutputLayout -> Ptr Output -> IO (Ptr WlrOutputLayoutOutput)
 layoutGetOutput = throwErrnoIfNull "layoutGetOutput" .: c_layout_get
+
+layoutOutputGetOutput :: Ptr WlrOutputLayoutOutput -> IO (Ptr Output)
+layoutOutputGetOutput = #{peek struct wlr_output_layout_output, output}
+
+layoutGetOutputs :: Ptr WlrOutputLayout -> IO [Ptr WlrOutputLayoutOutput]
+layoutGetOutputs layout =
+    getListFromHead (#{ptr struct wlr_output_layout, outputs} layout) #{offset struct wlr_output_layout_output, link}
 
 
 foreign import ccall "wlr_output_layout_output_at" c_layout_at :: Ptr WlrOutputLayout -> Double -> Double -> IO (Ptr Output)

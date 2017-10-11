@@ -2,12 +2,46 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 import Foreign.Storable (Storable(..))
 import Data.IORef (IORef, readIORef, modifyIORef, newIORef, writeIORef)
-import Graphics.Wayland.WlRoots.Input (InputDevice, DeviceType(..), inputDeviceType, ButtonState(..))
-import Graphics.Wayland.WlRoots.XCursor (WlrXCursor, loadCursorTheme, getCursor, getImages, WlrXCursorImage(..))
-import Graphics.Wayland.WlRoots.Cursor (WlrCursor, createCursor, setXCursor, warpCursor, getCursorX, getCursorY, attachInputDevice, cursorGetEvents, CursorEvents(..), attachOutputLayout)
-import Graphics.Wayland.WlRoots.Input.Pointer (WlrEventPointerButton(..))
+import Graphics.Wayland.WlRoots.Input
+    ( InputDevice
+    , DeviceType (..)
+    , inputDeviceType
+    , ButtonState (..)
+    )
+import Graphics.Wayland.WlRoots.XCursor
+    ( WlrXCursor
+    , loadCursorTheme
+    , getCursor
+    , getImages
+    , WlrXCursorImage (..)
+    )
+import Graphics.Wayland.WlRoots.Cursor
+    ( WlrCursor
+    , createCursor
+    , setXCursor
+    , warpCursor
+    , getCursorX
+    , getCursorY
+    , attachInputDevice
+    , cursorGetEvents
+    , CursorEvents (..)
+    , attachOutputLayout
+    , moveCursor
+    )
+import Graphics.Wayland.WlRoots.Input.Pointer
+    ( WlrEventPointerButton (..)
+    , WlrEventPointerMotion (..)
+    , WlrEventPointerAbsMotion (..)
+    )
 import Foreign.Ptr (Ptr)
-import Graphics.Wayland.WlRoots.OutputLayout (WlrOutputLayout, createOutputLayout, addOutputAuto)
+import Graphics.Wayland.WlRoots.OutputLayout
+    ( WlrOutputLayout
+    , createOutputLayout
+    , addOutputAuto
+    , removeOutput
+    , layoutOutputGetOutput
+    , layoutGetOutputs
+    )
 import Graphics.Wayland.WlRoots.Output
     ( Output
     , makeOutputCurrent
@@ -16,6 +50,7 @@ import Graphics.Wayland.WlRoots.Output
     , getTransMatrix
     , setCursor
     )
+import qualified Graphics.Wayland.WlRoots.Output as O (moveCursor)
 import Graphics.Wayland.WlRoots.Backend (Backend)
 
 import Graphics.Wayland.Signal (addListener, WlListener(..), ListenerToken)
@@ -47,16 +82,13 @@ data PointerState = PointerState
     { stateXCursor :: Ptr WlrXCursor
     , stateCursor :: Ptr WlrCursor
 
-    , currentX :: Int
-    , currentY :: Int
-
     , defaultColor :: Color
     , clearColor :: Color
 
     , stateLayout :: Ptr WlrOutputLayout
     , stateDevices :: [InputDevice]
 
-    , stateToken :: ListenerToken
+    , stateToken :: [ListenerToken]
     }
 
 getInitialState :: IORef PointerState -> IO PointerState
@@ -70,21 +102,21 @@ getInitialState ref = do
     attachOutputLayout cursor layout
     setXCursor cursor xcursor
 
-    let signal = cursorButton $ cursorGetEvents cursor
-    tok <- addListener (WlListener $ handleCursorButton ref) signal
+    let signal = cursorGetEvents cursor
+    tokb <- addListener (WlListener $ handleCursorButton ref) $ cursorButton signal
+    tokm <- addListener (WlListener $ handleCursorMotion ref) $ cursorMotion signal
+    toka <- addListener (WlListener $ handleCursorMotionAbs ref) $ cursorMotionAbs signal
 
     pure $ PointerState
         { stateXCursor = xcursor
         , stateCursor = cursor
-        , currentX = 0
-        , currentY = 0
         , defaultColor = c
         , clearColor = c
 
         , stateLayout = layout
         , stateDevices = []
 
-        , stateToken = tok
+        , stateToken = [tokb, tokm, toka]
         }
 
 setCursorImage :: Ptr Output -> Ptr WlrXCursor -> IO ()
@@ -112,6 +144,31 @@ frameHandler ref _ output = do
     glClearColor (colorR col) (colorG col) (colorB col) (colorA col)
     glClear 0x00004000
     swapOutputBuffers output
+
+handleCursorMotion :: IORef PointerState -> Ptr WlrEventPointerMotion -> IO ()
+handleCursorMotion ref event_ptr = do
+    state <- readIORef ref
+    event <- peek event_ptr
+
+    moveCursor
+        (stateCursor state)
+        (Just $ eventPointerMotionDevice event)
+        (eventPointerMotionDeltaX event)
+        (eventPointerMotionDeltaY event)
+
+handleCursorMotionAbs :: IORef PointerState -> Ptr WlrEventPointerAbsMotion -> IO ()
+handleCursorMotionAbs ref event_ptr = do
+    state <- readIORef ref
+    event <- peek event_ptr
+
+    loutputs <- layoutGetOutputs (stateLayout state)
+    forM_ loutputs $ \lout -> do
+        output <- layoutOutputGetOutput lout
+        O.moveCursor
+            output
+            (floor $ eventPointerAbsMotionX event)
+            (floor $ eventPointerAbsMotionY event)
+
 
 handleCursorButton :: IORef PointerState -> Ptr WlrEventPointerButton -> IO ()
 handleCursorButton ref event_ptr = do
@@ -151,6 +208,10 @@ handleOutputAdd ref output = do
 
     pure $ frameHandler ref
 
+handleOutputRemove :: IORef PointerState -> Ptr Output -> IO ()
+handleOutputRemove ref output = do
+    state <- readIORef ref
+    removeOutput (stateLayout state) output
 
 main :: IO ()
 main = do
@@ -160,4 +221,5 @@ main = do
     launchCompositor ignoreHooks
         { inputAddHook = handleInputAdd stateRef
         , outputAddHook = handleOutputAdd stateRef
+        , outputRemoveHook = handleOutputRemove stateRef
         }

@@ -9,7 +9,7 @@ module Graphics.Wayland.WlRoots.Output
 
     , effectiveResolution
     , destroyOutput
-    , moveCurosr
+    , moveCursor
 
     , OutputMode(..)
     , setOutputMode
@@ -81,8 +81,8 @@ effectiveResolution output = alloca $ \width -> alloca $ \height -> do
 
 foreign import ccall unsafe "wlr_output_move_cursor" c_move_cursor :: Ptr Output -> CInt -> CInt -> IO Bool
 
-moveCurosr :: Ptr Output -> Int -> Int -> IO ()
-moveCurosr ptr x y =
+moveCursor :: Ptr Output -> Int -> Int -> IO ()
+moveCursor ptr x y =
     throwErrnoIf_ not "moveCursor" $ c_move_cursor ptr (fromIntegral x) (fromIntegral y)
 
 --void wlr_output_transform(struct wlr_output *output,

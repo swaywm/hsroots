@@ -29,19 +29,22 @@ import Foreign.Ptr (Ptr, nullPtr, plusPtr)
 import Foreign.C.Error (throwErrnoIfNull)
 import Graphics.Wayland.WlRoots.XCursor (WlrXCursor)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
-import Graphics.Wayland.WlRoots.Input.Pointer (WlrEventPointerButton)
+import Graphics.Wayland.WlRoots.Input.Pointer (WlrEventPointerButton, WlrEventPointerMotion, WlrEventPointerAbsMotion)
 import Graphics.Wayland.WlRoots.Output (Output)
 import Graphics.Wayland.WlRoots.OutputLayout (WlrOutputLayout)
 import Graphics.Wayland.Signal (WlSignal)
 
 data CursorEvents = CursorEvents
     { cursorButton :: Ptr (WlSignal WlrEventPointerButton)
-
+    , cursorMotion :: Ptr (WlSignal WlrEventPointerMotion)
+    , cursorMotionAbs :: Ptr (WlSignal WlrEventPointerAbsMotion)
     }
 
 cursorGetEvents :: Ptr WlrCursor -> CursorEvents
 cursorGetEvents ptr = CursorEvents
     { cursorButton = #{ptr struct wlr_cursor, events.button} ptr
+    , cursorMotion = #{ptr struct wlr_cursor, events.motion} ptr
+    , cursorMotionAbs = #{ptr struct wlr_cursor, events.motion_absolute} ptr
     }
 
 data WlrCursor

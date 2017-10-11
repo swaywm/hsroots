@@ -98,6 +98,7 @@ data CompHooks = CompHooks
     , inputAddHook :: Ptr InputDevice -> IO ()
     , outputAddHook :: Ptr Output -> IO FrameHandler
     , keyPressHook :: Keysym -> Direction -> IO ()
+    , outputRemoveHook :: Ptr Output -> IO ()
     }
 
 
@@ -109,6 +110,7 @@ ignoreHooks = CompHooks
     , inputAddHook = \_ -> pure ()
     , outputAddHook = \_ -> pure $ \_ _ -> pure ()
     , keyPressHook = \_ _ -> pure ()
+    , outputRemoveHook = \_ -> pure ()
     }
 
 
@@ -209,10 +211,11 @@ handleOutputAdd hooks output = do
     sptr <- newStablePtr handler
     poke (getDataPtr output) (castStablePtrToPtr sptr)
 
-handleOutputRemove :: compHooks -> Ptr Output -> IO ()
-handleOutputRemove _ output = do
+handleOutputRemove :: CompHooks -> Ptr Output -> IO ()
+handleOutputRemove hooks output = do
     sptr :: Ptr () <- peek (getDataPtr output)
     freeStablePtr $ castPtrToStablePtr sptr
+    outputRemoveHook hooks output
 
 
 addSignalHandlers :: CompHooks -> DisplayServer -> Ptr Backend -> IO Handlers

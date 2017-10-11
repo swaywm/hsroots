@@ -6,6 +6,8 @@ module Graphics.Wayland.WlRoots.Input.Pointer
 
     , pointerGetEvents
     , PointerEvents (..)
+    , WlrEventPointerMotion (..)
+    , WlrEventPointerAbsMotion (..)
     )
 where
 
@@ -21,12 +23,13 @@ import Data.Word (Word32, Word64)
 
 data PointerEvents = PointerEvents
     { pointerButton :: Ptr (WlSignal WlrEventPointerButton)
-
+    , pointerMotion :: Ptr (WlSignal WlrEventPointerMotion)
     }
 
 pointerGetEvents :: Ptr WlrPointer -> PointerEvents
 pointerGetEvents ptr = PointerEvents
     { pointerButton = #{ptr struct wlr_pointer, events.button} ptr
+    , pointerMotion = #{ptr struct wlr_pointer, events.motion} ptr
     }
 
 data WlrPointer
@@ -63,3 +66,80 @@ instance Storable WlrEventPointerButton where
         let tusec :: Word64 = fromIntegral $ eventPointerButtonTime event `mod` 1e6
         #{poke struct wlr_event_pointer_button, time_sec} ptr tsec
         #{poke struct wlr_event_pointer_button, time_usec} ptr tusec
+
+data WlrEventPointerMotion = WlrEventPointerMotion
+    { eventPointerMotionDevice :: Ptr InputDevice
+    , eventPointerMotionTime :: Integer
+    , eventPointerMotionDeltaX :: Double
+    , eventPointerMotionDeltaY :: Double
+    } deriving (Show, Eq)
+
+instance Storable WlrEventPointerMotion where
+    sizeOf _ = #{size struct wlr_event_pointer_motion}
+    alignment _ = #{alignment struct wlr_event_pointer_motion}
+    peek ptr = do
+        dev <- #{peek struct wlr_event_pointer_motion, device} ptr
+        tsec :: Word32 <- #{peek struct wlr_event_pointer_motion, time_sec} ptr
+        tusec :: Word64 <- #{peek struct wlr_event_pointer_motion, time_usec} ptr
+        deltax <- #{peek struct wlr_event_pointer_motion, delta_x} ptr
+        deltay <- #{peek struct wlr_event_pointer_motion, delta_y} ptr
+
+        pure $ WlrEventPointerMotion
+            dev
+            (fromIntegral tsec * 1e6 + fromIntegral tusec)
+            deltax
+            deltay
+    poke ptr event = do
+        #{poke struct wlr_event_pointer_motion, device} ptr $ eventPointerMotionDevice event
+        let tsec :: Word32 = fromIntegral $ eventPointerMotionTime event `div` 1e6
+        let tusec :: Word64 = fromIntegral $ eventPointerMotionTime event `mod` 1e6
+        #{poke struct wlr_event_pointer_motion, time_sec} ptr tsec
+        #{poke struct wlr_event_pointer_motion, time_usec} ptr tusec
+
+        #{poke struct wlr_event_pointer_motion, delta_x} ptr $ eventPointerMotionDeltaX event
+        #{poke struct wlr_event_pointer_motion, delta_y} ptr $ eventPointerMotionDeltaY event
+
+
+data WlrEventPointerAbsMotion = WlrEventPointerAbsMotion
+    { eventPointerAbsMotionDevice :: Ptr InputDevice
+    , eventPointerAbsMotionTime :: Integer
+    , eventPointerAbsMotionX :: Double
+    , eventPointerAbsMotionY :: Double
+
+    , eventPointerAbsMotionWidth :: Double
+    , eventPointerAbsMotionHeight :: Double
+    } deriving (Show, Eq)
+
+instance Storable WlrEventPointerAbsMotion where
+    sizeOf _ = #{size struct wlr_event_pointer_motion_absolute}
+    alignment _ = #{alignment struct wlr_event_pointer_motion_absolute}
+    peek ptr = do
+        dev <- #{peek struct wlr_event_pointer_motion_absolute, device} ptr
+        tsec :: Word32 <- #{peek struct wlr_event_pointer_motion_absolute, time_sec} ptr
+        tusec :: Word64 <- #{peek struct wlr_event_pointer_motion_absolute, time_usec} ptr
+        x <- #{peek struct wlr_event_pointer_motion_absolute, x_mm} ptr
+        y <- #{peek struct wlr_event_pointer_motion_absolute, y_mm} ptr
+
+        width <- #{peek struct wlr_event_pointer_motion_absolute, width_mm} ptr
+        height <- #{peek struct wlr_event_pointer_motion_absolute, height_mm} ptr
+
+        pure $ WlrEventPointerAbsMotion
+            dev
+            (fromIntegral tsec * 1e6 + fromIntegral tusec)
+            x
+            y
+            width
+            height
+
+    poke ptr event = do
+        #{poke struct wlr_event_pointer_motion_absolute, device} ptr $ eventPointerAbsMotionDevice event
+        let tsec :: Word32 = fromIntegral $ eventPointerAbsMotionTime event `div` 1e6
+        let tusec :: Word64 = fromIntegral $ eventPointerAbsMotionTime event `mod` 1e6
+        #{poke struct wlr_event_pointer_motion_absolute, time_sec} ptr tsec
+        #{poke struct wlr_event_pointer_motion_absolute, time_usec} ptr tusec
+
+        #{poke struct wlr_event_pointer_motion_absolute, x_mm} ptr $ eventPointerAbsMotionX event
+        #{poke struct wlr_event_pointer_motion_absolute, y_mm} ptr $ eventPointerAbsMotionY event
+
+        #{poke struct wlr_event_pointer_motion_absolute, width_mm} ptr $ eventPointerAbsMotionWidth event
+        #{poke struct wlr_event_pointer_motion_absolute, height_mm} ptr $ eventPointerAbsMotionHeight event
