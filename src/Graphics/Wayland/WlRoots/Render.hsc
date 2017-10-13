@@ -21,8 +21,6 @@ where
 
 #include <wlr/render.h>
 
-import System.IO
-
 import Foreign.Storable (Storable(..))
 import Graphics.Wayland.Server (Buffer)
 import Foreign.Ptr (Ptr)
@@ -94,6 +92,4 @@ uploadPixels tex format strice width height pixels =
 isTextureValid :: Ptr Texture -> IO Bool
 isTextureValid tex = do
     ret :: CInt <- #{peek struct wlr_texture, valid} tex
-    hPutStr stderr "Valid: "
-    hPutStrLn stderr  $ show ret
     pure (ret /= 0)
