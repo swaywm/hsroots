@@ -1,3 +1,6 @@
 [submodule "haskell-wayland"]
 	path = haskell-wayland
 	url = https://github.com/Ongy/haskell-wayland.git
+[submodule "haskell-xkbcommon"]
+	path = haskell-xkbcommon
+	url = https://github.com/ongy/haskell-xkbcommon
