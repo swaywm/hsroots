@@ -8,6 +8,10 @@ module Graphics.Wayland.WlRoots.Input.Keyboard
 
     , KeyState (..)
     , EventKey (..)
+
+    , getKeystate
+
+    , setKeymap
     )
 where
 
@@ -19,6 +23,8 @@ import Data.Word (Word32, Word64)
 import Foreign.Ptr (Ptr, plusPtr)
 
 import Graphics.Wayland.Signal (WlSignal)
+
+import Text.XkbCommon.InternalTypes (CKeymap, CKeyboardState)
 
 data WlrKeyboard
 
@@ -60,3 +66,11 @@ instance Storable EventKey where
         <*> #{peek struct wlr_event_keyboard_key, keycode} ptr
         <*> (fmap keyStateFromInt . #{peek struct wlr_event_keyboard_key, state}) ptr
     poke = error "We don't poke EventKeys"
+
+foreign import ccall "wlr_keyboard_set_keymap" c_set_keymap :: Ptr WlrKeyboard -> Ptr CKeymap -> IO ()
+
+setKeymap :: Ptr WlrKeyboard -> Ptr CKeymap -> IO ()
+setKeymap = c_set_keymap
+
+getKeystate :: Ptr WlrKeyboard -> IO (Ptr CKeyboardState)
+getKeystate = #{peek struct wlr_keyboard, xkb_state}

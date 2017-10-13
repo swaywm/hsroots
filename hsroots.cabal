@@ -85,7 +85,7 @@ library
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.9 && <4.10,
                        composition >= 1.0.2 && < 1.1,
-                       hayland
+                       hayland, xkbcommon
   
   
   -- Directories containing source files.

@@ -51,6 +51,8 @@ import Graphics.Wayland.WlRoots.Input.Keyboard
     , getKeyDataPtr
     , EventKey (..)
     , KeyState (..)
+    , setKeymap
+    , getKeystate
     )
 import Graphics.Wayland.Server
     ( DisplayServer (..)
@@ -132,14 +134,13 @@ switchVT backend vt = do
         Nothing -> pure ()
         Just s -> changeVT s vt
 
-handleKeyPress :: CompHooks -> DisplayServer -> Ptr Backend -> KeyboardState -> Ptr EventKey -> IO ()
-handleKeyPress hooks dsp backend keyState ptr = do
-    hPutStr stderr "Some key was pressed: "
+handleKeyPress :: CompHooks -> DisplayServer -> Ptr Backend -> Ptr WlrKeyboard -> Ptr EventKey -> IO ()
+handleKeyPress hooks dsp backend keyboard ptr = do
     event <- peek ptr
     let keycode = fromEvdev . fromIntegral . keyCode $ event
-    syms <- getStateSyms keyState keycode
+    keyState <- getKeystate keyboard
+    syms <- getStateSymsI keyState keycode
     let keyDir = (keyStateToDirection $ state event)
-    _ <- updateKeyboardStateKey keyState keycode keyDir
     hPutStrLn stderr . intercalate "," $ map keysymName syms
     forM_ syms $ \sym -> do
         case sym of
@@ -164,10 +165,11 @@ handleKeyboardAdd hooks dsp backend ptr = do
     let signals = getKeySignals ptr
 
     (Just cxt) <- newContext defaultFlags
-    (Just keymap) <- newKeymapFromNames cxt noPrefs
-    keyState <- newKeyboardState keymap
+    (Just keymap) <- newKeymapFromNamesI cxt noPrefs
 
-    handler <- addListener (WlListener $ handleKeyPress hooks dsp backend keyState) (keySignalKey signals)
+    setKeymap ptr keymap
+
+    handler <- addListener (WlListener $ handleKeyPress hooks dsp backend ptr) (keySignalKey signals)
     sptr <- newStablePtr handler
     poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
 
