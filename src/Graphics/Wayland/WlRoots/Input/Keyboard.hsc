@@ -30,7 +30,6 @@ data WlrKeyboard
 
 data KeyboardSignals = KeyboardSignals
     { keySignalKey :: Ptr (WlSignal EventKey)
-
     }
 
 getKeySignals :: Ptr WlrKeyboard -> KeyboardSignals

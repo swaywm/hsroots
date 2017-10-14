@@ -75,6 +75,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.XCursor
   exposed-modules:     Graphics.Wayland.WlRoots.Cursor
   exposed-modules:     Graphics.Wayland.WlRoots.Box
+  exposed-modules:     Graphics.Wayland.WlRoots.Seat
   
   -- Modules included in this library but not exported.
   -- other-modules:       
@@ -168,13 +169,18 @@ executable compositor
 
   other-modules:        Shared
   other-modules:        XdgShell
+  other-modules:        View
+  other-modules:        Input
+  other-modules:        Input.Keyboard
+  other-modules:        Waymonad
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.6.0.1 && <5, hsroots, hayland, clock, xkbcommon, containers
-  build-depends:       unix
+  build-depends:       base >=4.6.0.1 && <5, hsroots, hayland, clock
+  build-depends:       xkbcommon, containers, composition
+  build-depends:       unix, mtl
 
   -- Directories containing source files.
   -- hs-source-dirs:

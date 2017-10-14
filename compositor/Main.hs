@@ -2,11 +2,22 @@
 module Main
 where
 
+import XdgShell
+    ( XdgShell
+    , xdgShellCreate
+    )
+import Waymonad
+import Shared
+import View
+
+import Control.Monad.IO.Class (liftIO)
+import Input (Input, inputCreate)
 import Foreign.Ptr (Ptr, ptrToIntPtr)
 import Data.IORef (newIORef, IORef, writeIORef, readIORef)
 
 import Graphics.Wayland.Resource (resourceDestroy)
 import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix, matrixTranslate)
+import Graphics.Wayland.WlRoots.Box (WlrBox (..))
 import Graphics.Wayland.WlRoots.Render
     ( Renderer
     , doRender
@@ -19,18 +30,19 @@ import Graphics.Wayland.WlRoots.Compositor (WlrCompositor, compositorCreate)
 import Graphics.Wayland.WlRoots.Shell
     ( WlrShell
     , shellCreate
-    , shellSurfaceGetSurface
-    )
-import XdgShell
-import Graphics.Wayland.WlRoots.XdgShell
-    ( xdgSurfaceGetSurface
     )
 import Graphics.Wayland.WlRoots.XWayland
     ( XWayland
     , xwaylandCreate
-    , x11WindowGetSurface
     )
-import Graphics.Wayland.WlRoots.DeviceManager (WlrDeviceManager, managerCreate)
+import Graphics.Wayland.WlRoots.DeviceManager
+    ( WlrDeviceManager
+    , managerCreate
+    )
+import Graphics.Wayland.WlRoots.OutputLayout
+    ( WlrOutputLayout
+    , createOutputLayout
+    )
 import Graphics.Wayland.WlRoots.Output
     ( Output
     , makeOutputCurrent
@@ -38,32 +50,22 @@ import Graphics.Wayland.WlRoots.Output
     , getTransMatrix
     )
 import Graphics.Wayland.WlRoots.Surface
-    ( WlrSurface
-    , surfaceGetTexture
+    ( surfaceGetTexture
     , withSurfaceMatrix
     , callbackGetResource
     , surfaceGetCallbacks
     , callbackGetCallback
     , getPendingState
     )
-import Graphics.Wayland.Server (displayInitShm, DisplayServer, callbackDone)
-
+import Graphics.Wayland.Server
+    ( displayInitShm
+    , DisplayServer
+    , callbackDone
+    )
 import Control.Exception (bracket_)
 import Control.Monad (void, when, forM_)
 
-import System.IO
-import Shared
-
-foreign import ccall "pthread_self" myThreadId :: IO (Ptr ())
-
-ptrToInt :: Num b => Ptr a -> b
-ptrToInt = fromIntegral . ptrToIntPtr
-
-renderOn :: Ptr Output -> Ptr Renderer -> IO a -> IO a
-renderOn output rend act = bracket_ 
-    (makeOutputCurrent output)
-    (swapOutputBuffers output)
-    (doRender rend output act)
+import qualified Data.IntMap.Strict as M
 
 data Compositor = Compositor
     { compDisplay :: DisplayServer
@@ -74,14 +76,29 @@ data Compositor = Compositor
     , compManager :: Ptr WlrDeviceManager
     , compXWayland :: Ptr XWayland
     , compBackend :: Ptr Backend
+    , compLayout :: Ptr WlrOutputLayout
+    , compInput :: Input
     }
 
-outputHandleSurface :: Compositor -> Double -> Ptr Output -> Ptr WlrSurface -> IO ()
-outputHandleSurface comp secs output surface = do
+ptrToInt :: Num b => Ptr a -> b
+ptrToInt = fromIntegral . ptrToIntPtr
+
+renderOn :: Ptr Output -> Ptr Renderer -> IO a -> IO a
+renderOn output rend act = bracket_
+    (makeOutputCurrent output)
+    (swapOutputBuffers output)
+    (doRender rend output act)
+
+outputHandleSurface :: Compositor -> Double -> Ptr Output -> View -> IO ()
+outputHandleSurface comp secs output view = do
+    surface <- getViewSurface view
     texture <- surfaceGetTexture surface
     isValid <- isTextureValid texture
     when isValid $ withMatrix $ \trans -> do
-        matrixTranslate trans 200 200 0
+        box <- getViewBox view
+        let x = boxX box
+        let y = boxY box
+        matrixTranslate trans (realToFrac x) (realToFrac y) 0
         withSurfaceMatrix surface (getTransMatrix output) trans $ \mat -> do
             renderWithMatrix (compRenderer comp) texture mat
 
@@ -93,27 +110,36 @@ outputHandleSurface comp secs output surface = do
             resourceDestroy res
 
 
-frameHandler :: IORef Compositor -> Double -> Ptr Output -> IO ()
+frameHandler :: IORef Compositor -> Double -> Ptr Output -> WayState ()
 frameHandler compRef secs output = do
-    comp <- readIORef compRef
-    renderOn output (compRenderer comp) $ do
-        -- First build the list of surface we can draw
-        shell <- mapM shellSurfaceGetSurface =<< mempty
-        xdgShell <- mapM xdgSurfaceGetSurface =<< (getXdgSurfaces $ compXdg comp)
-        x11 <- mapM x11WindowGetSurface =<< mempty
+    -- First build the list of surface we can draw
+    views <- get
+    liftIO $ do
+        comp <- readIORef compRef
+        renderOn output (compRenderer comp) $ do
+            mapM_ (outputHandleSurface comp secs output) views
 
-        let surfaces = shell `mappend` xdgShell `mappend` x11
-        mapM_ (outputHandleSurface comp secs output) surfaces
 
-makeCompositor :: DisplayServer -> Ptr Backend -> IO Compositor
+removeView :: Int -> WayState ()
+removeView key = do
+    modify $ M.delete key
+
+addView ::  Int -> View -> WayState ()
+addView key value = do
+    modify $ M.insert key value
+
+
+makeCompositor ::DisplayServer -> Ptr Backend -> WayState Compositor
 makeCompositor display backend = do
-    renderer <- rendererCreate backend
-    void $ displayInitShm display
-    comp <- compositorCreate display renderer
-    shell <- shellCreate display
-    xdgShell <- xdgShellCreate display
-    devManager <- managerCreate display
-    xway <- xwaylandCreate display comp
+    renderer <- liftIO $ rendererCreate backend
+    void $ liftIO $ displayInitShm display
+    comp <- liftIO $ compositorCreate display renderer
+    shell <- liftIO $ shellCreate display
+    xdgShell <- xdgShellCreate display addView removeView
+    devManager <- liftIO $ managerCreate display
+    xway <- liftIO $ xwaylandCreate display comp
+    layout <- liftIO $ createOutputLayout
+    input <- liftIO $ inputCreate display layout backend
     pure $ Compositor
         { compDisplay = display
         , compRenderer = renderer
@@ -123,19 +149,21 @@ makeCompositor display backend = do
         , compManager = devManager
         , compXWayland = xway
         , compBackend = backend
+        , compLayout = layout
+        , compInput = input
         }
-
 
 realMain :: IO ()
 realMain = do
+    stateRef <- newIORef mempty
     dpRef <- newIORef undefined
     compRef <- newIORef undefined
     launchCompositor ignoreHooks
         { displayHook = writeIORef dpRef
         , backendPostHook = \backend -> do
             dsp <- readIORef dpRef
-            writeIORef compRef =<< makeCompositor dsp backend
-        , outputAddHook = \_ -> pure $ frameHandler compRef
+            writeIORef compRef =<< runWayState (makeCompositor dsp backend) stateRef
+        , outputAddHook = \_ -> pure $ \secs output -> runWayState (frameHandler compRef secs output) stateRef
         }
     pure ()
 
