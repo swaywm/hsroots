@@ -4,6 +4,7 @@ module Input
     )
 where
 
+import Control.Monad.IO.Class (liftIO)
 import Input.Keyboard
 import Input.Pointer
 import Input.Cursor
@@ -25,6 +26,8 @@ import Graphics.Wayland.Signal
     , ListenerToken
     )
 
+import Waymonad
+
 data Input = Input
     { inputCursorTheme :: Ptr WlrXCursorTheme
     , inputXCursor :: Ptr WlrXCursor
@@ -33,28 +36,28 @@ data Input = Input
     , inputAddToken :: ListenerToken
     }
 
-handleInputAdd :: Ptr WlrCursor -> DisplayServer -> Ptr Backend -> Ptr InputDevice -> IO ()
-handleInputAdd cursor dsp backend ptr = do
+handleInputAdd :: Ptr WlrCursor -> DisplayServer -> Ptr Backend -> Ptr WlrSeat -> Ptr InputDevice -> IO ()
+handleInputAdd cursor dsp backend seat ptr = do
     putStr "Found a new input of type: "
     iType <- inputDeviceType ptr
     print iType
     case iType of
-        (DeviceKeyboard kptr) -> handleKeyboardAdd dsp backend kptr
+        (DeviceKeyboard kptr) -> handleKeyboardAdd dsp backend seat ptr kptr
         (DevicePointer pptr) -> handlePointer cursor ptr pptr
         _ -> pure ()
 
-inputCreate :: DisplayServer -> Ptr WlrOutputLayout -> Ptr Backend -> IO Input
+inputCreate :: DisplayServer -> Ptr WlrOutputLayout -> Ptr Backend -> WayState Input
 inputCreate display layout backend = do
-    theme <- loadCursorTheme "default" 16
-    xcursor <- getCursor theme "left_ptr"
-    seat <- createSeat display "seat0"
-    cursor <- cursorCreate layout
+    theme   <- liftIO $ loadCursorTheme "default" 16
+    xcursor <- liftIO $ getCursor theme "left_ptr"
+    seat    <- liftIO $ createSeat display "seat0"
+    cursor  <- cursorCreate layout seat
 
-    setSeatCapabilities seat [seatCapabilityTouch, seatCapabilityKeyboard, seatCapabilityPointer]
-    setXCursor (cursorRoots cursor) xcursor
+    liftIO $ setSeatCapabilities seat [seatCapabilityTouch, seatCapabilityKeyboard, seatCapabilityPointer]
+    liftIO $ setXCursor (cursorRoots cursor) xcursor
 
     let signals = backendGetSignals backend
-    tok <- addListener (WlListener $ handleInputAdd (cursorRoots cursor) display backend) (inputAdd signals)
+    tok <- liftIO $ addListener (WlListener $ handleInputAdd (cursorRoots cursor) display backend seat) (inputAdd signals)
 
     pure Input
         { inputCursorTheme = theme

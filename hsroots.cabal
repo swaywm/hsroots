@@ -175,6 +175,7 @@ executable compositor
   other-modules:        Input.Pointer
   other-modules:        Input.Cursor
   other-modules:        Waymonad
+  other-modules:        ViewSet
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:

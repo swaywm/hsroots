@@ -8,15 +8,18 @@ module Waymonad
     , modify
     , runWayState
 
+    , viewBelow
     )
 where
 
+import Graphics.Wayland.WlRoots.Box (Point)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT(..), MonadReader, ask)
 import Data.IORef (IORef, modifyIORef, readIORef)
 
-import Data.IntMap (IntMap)
-import View
+-- import Data.IntMap (IntMap)
+import View (View)
+import qualified ViewSet as VS
 
 
 -- All of this makes for a fake `Monad State` in IO
@@ -26,7 +29,7 @@ import View
 -- but we are in IO, which can be abused with this trick.
 -- It should all be hidden in the high level apis, low level APIs will
 -- require the get and runWayState around callbacks that are IO
-type WayStateRef = IORef (IntMap View)
+type WayStateRef = IORef VS.ViewSet
 
 newtype WayState a = WayState (ReaderT WayStateRef IO a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadReader WayStateRef)
@@ -42,4 +45,5 @@ modify fun = do
 runWayState :: WayState a -> WayStateRef -> IO a
 runWayState (WayState m) ref = runReaderT m ref
 
-
+viewBelow :: Point -> WayState (Maybe View)
+viewBelow point = liftIO . (VS.viewBelow point) =<< get

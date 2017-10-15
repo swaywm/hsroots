@@ -11,10 +11,12 @@ import Graphics.Wayland.Signal
     ( addListener
     , WlListener (..)
     )
+import Graphics.Wayland.WlRoots.Seat (WlrSeat, attachKeyboard)
 import Graphics.Wayland.WlRoots.Backend.Multi (getSession')
 import Graphics.Wayland.WlRoots.Backend.Session (changeVT)
 import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard)
 import Graphics.Wayland.WlRoots.Backend (Backend)
+import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Keyboard
     ( WlrKeyboard
     , KeyboardSignals (..)
@@ -85,8 +87,8 @@ handleKeyPress dsp backend keyboard ptr = do
         Keysym_XF86Switch_VT_12 -> switchVT backend 12
         _ -> pure ()
 
-handleKeyboardAdd :: DisplayServer -> Ptr Backend -> Ptr WlrKeyboard -> IO ()
-handleKeyboardAdd dsp backend ptr = do
+handleKeyboardAdd :: DisplayServer -> Ptr Backend -> Ptr WlrSeat -> Ptr InputDevice -> Ptr WlrKeyboard -> IO ()
+handleKeyboardAdd dsp backend seat dev ptr = do
     let signals = getKeySignals ptr
 
     (Just cxt) <- newContext defaultFlags
@@ -97,6 +99,8 @@ handleKeyboardAdd dsp backend ptr = do
     handler <- addListener (WlListener $ handleKeyPress dsp backend ptr) (keySignalKey signals)
     sptr <- newStablePtr handler
     poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
+    attachKeyboard seat dev
+
 
 
 handleKeyboardRemove :: Ptr WlrKeyboard -> IO ()

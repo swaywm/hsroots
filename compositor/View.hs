@@ -1,4 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module View
     ( ShellSurface (..)
     , View (..)
@@ -7,6 +8,7 @@ module View
     , moveView
     , resizeView
     , getViewSurface
+    , activateView
     )
 where
 
@@ -30,7 +32,6 @@ data View = forall a. ShellSurface a => View
     , viewSurface :: a
     }
 
-
 getViewBox :: MonadIO m => View -> m WlrBox
 getViewBox view = case view of
     (View xref yref surf) -> do
@@ -43,7 +44,6 @@ getViewBox view = case view of
             , boxWidth  = floor width
             , boxHeight = floor height
             }
-
 
 createView :: (ShellSurface a, MonadIO m) => a -> m View
 createView surf = do
@@ -73,3 +73,7 @@ getViewSurface view = case view of
     (View _ _ surf) -> do
         getSurface surf
 
+activateView :: MonadIO m => View -> Bool -> m ()
+activateView view active = case view of
+    (View _ _ surf) -> do
+        activate surf active

@@ -147,7 +147,7 @@ makeCompositor display backend = do
     devManager <- liftIO $ managerCreate display
     xway <- liftIO $ xwaylandCreate display comp
     layout <- liftIO $ createOutputLayout
-    input <- liftIO $ inputCreate display layout backend
+    input <- inputCreate display layout backend
     pure $ Compositor
         { compDisplay = display
         , compRenderer = renderer

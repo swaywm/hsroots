@@ -4,17 +4,29 @@ module Graphics.Wayland.WlRoots.Seat
     , destroySeat
     , handleForClient
     , setSeatCapabilities
+
+    , pointerNotifyEnter
+    , pointerNotifyMotion
+
+    , keyboardNotifyEnter
+
+    , pointerClearFocus
+
+    , attachKeyboard
     )
 where
 
 #include <wlr/types/wlr_seat.h>
 
+import Data.Word (Word32)
 import Foreign.Ptr (Ptr)
 import Foreign.C.String (CString, withCString)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CInt(..))
 import Data.Bits ((.|.))
 import Graphics.Wayland.Server (DisplayServer(..), Client (..), SeatCapability(..))
+import Graphics.Wayland.WlRoots.Surface (WlrSurface)
+import Graphics.Wayland.WlRoots.Input (InputDevice)
 
 data WlrSeat
 
@@ -46,3 +58,33 @@ setSeatCapabilities seat xs =
     c_set_caps seat (fromIntegral $ foldr ((.|.) . unCap) 0 xs)
     where unCap :: SeatCapability -> Int
           unCap (SeatCapability x) = x
+
+
+foreign import ccall "wlr_seat_pointer_notify_enter" c_pointer_enter :: Ptr WlrSeat -> Ptr WlrSurface -> Double -> Double -> IO ()
+
+pointerNotifyEnter :: Ptr WlrSeat -> Ptr WlrSurface -> Double -> Double -> IO ()
+pointerNotifyEnter = c_pointer_enter
+
+
+foreign import ccall "wlr_seat_keyboard_notify_enter" c_keyboard_enter :: Ptr WlrSeat -> Ptr WlrSurface -> IO ()
+
+keyboardNotifyEnter :: Ptr WlrSeat -> Ptr WlrSurface -> IO ()
+keyboardNotifyEnter = c_keyboard_enter
+
+
+foreign import ccall "wlr_seat_pointer_notify_motion" c_pointer_motion :: Ptr WlrSeat -> Word32 -> Double -> Double -> IO ()
+
+pointerNotifyMotion :: Ptr WlrSeat -> Word32 -> Double -> Double -> IO ()
+pointerNotifyMotion = c_pointer_motion
+
+
+foreign import ccall "wlr_seat_pointer_clear_focus" c_pointer_clear_focus :: Ptr WlrSeat -> IO ()
+
+pointerClearFocus :: Ptr WlrSeat -> IO ()
+pointerClearFocus = c_pointer_clear_focus
+
+
+foreign import ccall "wlr_seat_attach_keyboard" c_attach_keyboard :: Ptr WlrSeat -> Ptr InputDevice -> IO ()
+
+attachKeyboard :: Ptr WlrSeat -> Ptr InputDevice -> IO ()
+attachKeyboard = c_attach_keyboard

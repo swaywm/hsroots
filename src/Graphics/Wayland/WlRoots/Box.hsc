@@ -1,5 +1,8 @@
 module Graphics.Wayland.WlRoots.Box
     ( WlrBox (..)
+    , Point (..)
+
+    , boxContainsPoint
     )
 where
 
@@ -13,6 +16,12 @@ data WlrBox = WlrBox
     , boxWidth :: Int
     , boxHeight :: Int
     }
+
+data Point = Point { pointX :: Int, pointY :: Int }
+
+boxContainsPoint :: Point -> WlrBox -> Bool
+boxContainsPoint (Point px py) (WlrBox bx by bw bh) =
+    bx <= px && px - bx <= bw && by <= py && py - by <= bh
 
 instance Storable WlrBox where
     sizeOf _ = #{size struct wlr_box}
