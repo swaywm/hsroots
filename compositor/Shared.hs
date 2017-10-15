@@ -223,8 +223,8 @@ addSignalHandlers :: CompHooks -> DisplayServer -> Ptr Backend -> IO Handlers
 addSignalHandlers hooks dsp ptr =
     let signals = backendGetSignals ptr
      in Handlers
-        <$> addListener (WlListener $ handleInputAdd hooks dsp ptr) (inputAdd signals)
-        <*> addListener (WlListener $ handleInputRemove hooks) (inputRemove signals)
+        <$> addListener (WlListener $ const $ pure ()) (inputAdd signals)
+        <*> addListener (WlListener $ const $ pure ()) (inputRemove signals)
         <*> addListener (WlListener $ handleOutputAdd hooks) (outputAdd signals)
         <*> addListener (WlListener $ handleOutputRemove hooks ) (outputRemove signals)
 

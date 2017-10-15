@@ -2,6 +2,7 @@
 module Main
 where
 
+import Foreign.Storable (Storable(peek))
 import XdgShell
     ( XdgShell
     , xdgShellCreate
@@ -11,7 +12,7 @@ import Shared
 import View
 
 import Control.Monad.IO.Class (liftIO)
-import Input (Input, inputCreate)
+import Input (Input(..), inputCreate)
 import Foreign.Ptr (Ptr, ptrToIntPtr)
 import Data.IORef (newIORef, IORef, writeIORef, readIORef)
 
@@ -25,6 +26,11 @@ import Graphics.Wayland.WlRoots.Render
     , renderWithMatrix
     )
 import Graphics.Wayland.WlRoots.Backend (Backend)
+import Graphics.Wayland.WlRoots.XCursor
+    ( WlrXCursor
+    , getImages
+    , WlrXCursorImage (..)
+    )
 import Graphics.Wayland.WlRoots.Render.Gles2 (rendererCreate)
 import Graphics.Wayland.WlRoots.Compositor (WlrCompositor, compositorCreate)
 import Graphics.Wayland.WlRoots.Shell
@@ -42,12 +48,14 @@ import Graphics.Wayland.WlRoots.DeviceManager
 import Graphics.Wayland.WlRoots.OutputLayout
     ( WlrOutputLayout
     , createOutputLayout
+    , addOutputAuto
     )
 import Graphics.Wayland.WlRoots.Output
     ( Output
     , makeOutputCurrent
     , swapOutputBuffers
     , getTransMatrix
+    , setCursor
     )
 import Graphics.Wayland.WlRoots.Surface
     ( surfaceGetTexture
@@ -129,7 +137,7 @@ addView key value = do
     modify $ M.insert key value
 
 
-makeCompositor ::DisplayServer -> Ptr Backend -> WayState Compositor
+makeCompositor :: DisplayServer -> Ptr Backend -> WayState Compositor
 makeCompositor display backend = do
     renderer <- liftIO $ rendererCreate backend
     void $ liftIO $ displayInitShm display
@@ -153,6 +161,30 @@ makeCompositor display backend = do
         , compInput = input
         }
 
+setCursorImage :: Ptr Output -> Ptr WlrXCursor -> IO ()
+setCursorImage output xcursor = do
+    images <- getImages xcursor
+    image <- peek $ head images
+
+    setCursor
+        output
+        (xCursorImageBuffer image)
+        (xCursorImageWidth image)
+        (xCursorImageWidth image)
+        (xCursorImageHeight image)
+        (xCursorImageHotspotX image)
+        (xCursorImageHotspotY image)
+
+handleOutputAdd :: IORef Compositor -> WayStateRef -> Ptr Output -> IO FrameHandler
+handleOutputAdd ref stateRef output = do
+    comp <- readIORef ref
+
+    setCursorImage output (inputXCursor $ compInput comp)
+    addOutputAuto (compLayout comp) output
+
+    pure $ \secs out ->
+        runWayState (frameHandler ref secs out) stateRef
+
 realMain :: IO ()
 realMain = do
     stateRef <- newIORef mempty
@@ -160,10 +192,10 @@ realMain = do
     compRef <- newIORef undefined
     launchCompositor ignoreHooks
         { displayHook = writeIORef dpRef
-        , backendPostHook = \backend -> do
+        , backendPreHook = \backend -> do
             dsp <- readIORef dpRef
             writeIORef compRef =<< runWayState (makeCompositor dsp backend) stateRef
-        , outputAddHook = \_ -> pure $ \secs output -> runWayState (frameHandler compRef secs output) stateRef
+        , outputAddHook = handleOutputAdd compRef stateRef
         }
     pure ()
 

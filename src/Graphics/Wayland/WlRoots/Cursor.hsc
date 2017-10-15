@@ -17,6 +17,8 @@ module Graphics.Wayland.WlRoots.Cursor
     , mapToOutput
     , mapInputToOutput
 
+    , mapToRegion
+
     , CursorEvents (..)
     , cursorGetEvents
     )
@@ -32,6 +34,7 @@ import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Pointer (WlrEventPointerButton, WlrEventPointerMotion, WlrEventPointerAbsMotion)
 import Graphics.Wayland.WlRoots.Output (Output)
 import Graphics.Wayland.WlRoots.OutputLayout (WlrOutputLayout)
+import Graphics.Wayland.WlRoots.Box (WlrBox)
 import Graphics.Wayland.Signal (WlSignal)
 
 data CursorEvents = CursorEvents
@@ -124,4 +127,8 @@ mapInputToOutput :: Ptr WlrCursor -> Ptr InputDevice -> Ptr Output -> IO ()
 mapInputToOutput = c_map_intput_to_output
 
 
--- TODO: Box stuff
+foreign import ccall "wlr_cursor_map_to_region" c_map_to_region :: Ptr WlrCursor -> Ptr WlrBox -> IO ()
+
+mapToRegion :: Ptr WlrCursor -> Maybe (Ptr WlrBox) -> IO ()
+mapToRegion cursor Nothing = mapToRegion cursor (Just nullPtr)
+mapToRegion cursor (Just box) = c_map_to_region cursor box

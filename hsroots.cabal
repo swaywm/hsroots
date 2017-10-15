@@ -172,6 +172,8 @@ executable compositor
   other-modules:        View
   other-modules:        Input
   other-modules:        Input.Keyboard
+  other-modules:        Input.Pointer
+  other-modules:        Input.Cursor
   other-modules:        Waymonad
 
   -- LANGUAGE extensions used by modules in this package.
