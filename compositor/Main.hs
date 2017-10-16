@@ -2,6 +2,7 @@
 module Main
 where
 
+import System.IO
 import Foreign.Storable (Storable(peek))
 import XdgShell
     ( XdgShell
@@ -17,7 +18,7 @@ import Foreign.Ptr (Ptr, ptrToIntPtr)
 import Data.IORef (newIORef, IORef, writeIORef, readIORef)
 
 import Graphics.Wayland.Resource (resourceDestroy)
-import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix, matrixTranslate)
+import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix, matrixTranslate, printMatrix)
 import Graphics.Wayland.WlRoots.Box (WlrBox (..))
 import Graphics.Wayland.WlRoots.Render
     ( Renderer
@@ -108,6 +109,9 @@ outputHandleSurface comp secs output view = do
         let y = boxY box
         matrixTranslate trans (realToFrac x) (realToFrac y) 0
         withSurfaceMatrix surface (getTransMatrix output) trans $ \mat -> do
+            printMatrix stderr trans
+            printMatrix stderr (getTransMatrix output)
+            hPutStrLn stderr "\n"
             renderWithMatrix (compRenderer comp) texture mat
 
         callbacks <- surfaceGetCallbacks =<< getCurrentState surface

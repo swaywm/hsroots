@@ -63,6 +63,13 @@ updatePosition :: Ptr WlrCursor -> Ptr WlrSeat -> Word32 -> WayState ()
 updatePosition cursor seat time = do
     x <- liftIO $ getCursorX cursor
     y <- liftIO $ getCursorY cursor
+
+    liftIO $ do
+        hPutStr stderr "Cursor is at: "
+        hPutStr stderr $ show x
+        hPutStr stderr "x"
+        hPutStrLn stderr $ show y
+
     viewM <- viewBelow $ Point (floor x) (floor y)
 
     case viewM of
@@ -72,7 +79,6 @@ updatePosition cursor seat time = do
             pointerNotifyEnter seat surf x y
             pointerNotifyMotion seat time x y
             keyboardNotifyEnter seat surf
-            --activateView view True
 
 
 handleCursorMotion :: Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerMotion -> WayState ()

@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Graphics.Wayland.WlRoots.Render.Matrix
     ( Matrix(..)
 -- | This entir emodule should probably replaced by types reimplemented in
@@ -6,6 +7,7 @@ module Graphics.Wayland.WlRoots.Render.Matrix
     , withMatrix
     , withIdentity
 
+    , printMatrix
 
 -- | This is the low level interface exported by wlroots.
     , matrixIdentity
@@ -16,6 +18,8 @@ module Graphics.Wayland.WlRoots.Render.Matrix
     )
 where
 
+import System.IO
+import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr)
 import Foreign.C.Types (CFloat(..))
 import Foreign.Marshal.Alloc (allocaBytes)
@@ -64,4 +68,10 @@ foreign import ccall unsafe "wlr_matrix_mul" c_matrix_mul :: Ptr CFloat -> Ptr C
 matrixMul :: Matrix -> Matrix -> Matrix -> IO ()
 matrixMul (Matrix x) (Matrix y) (Matrix o) = c_matrix_mul x y o
 
-
+printMatrix :: Handle -> Matrix -> IO ()
+printMatrix handle (Matrix p) = do
+    values :: [CFloat] <- mapM (peekElemOff p) [0 .. 15]
+    hPutStrLn handle . show $ take 4 $ drop 0  values
+    hPutStrLn handle . show $ take 4 $ drop 4  values
+    hPutStrLn handle . show $ take 4 $ drop 8  values
+    hPutStrLn handle . show $ take 4 $ drop 12 values
