@@ -16,6 +16,8 @@ module Graphics.Wayland.WlRoots.Render
 
     , doRender
     , isTextureValid
+
+    , renderColoredQuad
     )
 where
 
@@ -27,7 +29,9 @@ import Foreign.Ptr (Ptr)
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Foreign.C.Types (CFloat(..), CInt(..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
+import Graphics.Wayland.WlRoots.Render.Color (Color)
 import Graphics.Wayland.WlRoots.Output (Output)
+import Foreign.Marshal.Utils (with)
 import Control.Exception (bracket_)
 
 data Renderer
@@ -93,3 +97,10 @@ isTextureValid :: Ptr Texture -> IO Bool
 isTextureValid tex = do
     ret :: CInt <- #{peek struct wlr_texture, valid} tex
     pure (ret /= 0)
+
+
+foreign import ccall unsafe "wlr_render_colored_quad" c_colored_quad :: Ptr Renderer -> Ptr Color -> Ptr CFloat -> IO ()
+
+renderColoredQuad :: Ptr Renderer -> Color -> Matrix -> IO ()
+renderColoredQuad rend col (Matrix m) = with col $ \cptr ->
+    c_colored_quad rend cptr m

@@ -67,6 +67,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Render
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Gles2
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Matrix
+  exposed-modules:     Graphics.Wayland.WlRoots.Render.Color
   exposed-modules:     Graphics.Wayland.WlRoots.Shell
   exposed-modules:     Graphics.Wayland.WlRoots.Surface
   exposed-modules:     Graphics.Wayland.WlRoots.Util.List

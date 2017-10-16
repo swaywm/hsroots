@@ -18,13 +18,15 @@ import Foreign.Ptr (Ptr, ptrToIntPtr)
 import Data.IORef (newIORef, IORef, writeIORef, readIORef)
 
 import Graphics.Wayland.Resource (resourceDestroy)
-import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix, matrixTranslate, printMatrix)
+import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix, matrixTranslate, printMatrix, matrixScale, matrixMul, matrixIdentity)
 import Graphics.Wayland.WlRoots.Box (WlrBox (..))
+import Graphics.Wayland.WlRoots.Render.Color (colorWhite)
 import Graphics.Wayland.WlRoots.Render
     ( Renderer
     , doRender
     , isTextureValid
     , renderWithMatrix
+    , renderColoredQuad
     )
 import Graphics.Wayland.WlRoots.Backend (Backend)
 import Graphics.Wayland.WlRoots.XCursor
@@ -117,6 +119,12 @@ outputHandleSurface comp secs output view = do
             callbackDone cb (floor $ secs * 1000)
             res <- callbackGetResource callback
             resourceDestroy res
+
+        withMatrix $ \stretch -> withMatrix $ \result -> do
+            --matrixScale stretch (fromIntegral $ boxWidth box) (fromIntegral $ boxHeight box) 1
+            matrixIdentity stretch
+            matrixMul (getTransMatrix output) stretch result
+            renderColoredQuad (compRenderer comp) colorWhite result
 
 
 frameHandler :: IORef Compositor -> Double -> Ptr Output -> WayState ()
