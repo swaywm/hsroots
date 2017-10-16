@@ -67,6 +67,7 @@ handleXdgSurface stateRef ref addFun delFun surf = do
     view <- createView xdgSurf
     runWayState (addFun (ptrToInt surf) view) stateRef
     activate xdgSurf True
+    R.setMaximized surf True
 
     let signals = R.getXdgSurfaceEvents surf
     handler <- addListener (WlListener $ handleXdgDestroy stateRef ref delFun) (R.xdgSurfacEvtDestroy signals)

@@ -14,6 +14,7 @@ module Graphics.Wayland.WlRoots.XdgShell
     , setSize
     , getGeometry
     , setActivated
+    , setMaximized
     )
 where
 
@@ -108,3 +109,14 @@ setActivated surf active = do
     when
         (role == #{const WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL})
         (c_activate surf active)
+
+
+
+foreign import ccall "wlr_xdg_toplevel_v6_set_maximized" c_maximize :: Ptr WlrXdgSurface -> Bool -> IO ()
+
+setMaximized :: Ptr WlrXdgSurface -> Bool -> IO ()
+setMaximized surf maximized = do
+    role :: CInt <- #{peek struct wlr_xdg_surface_v6, role} surf
+    when
+        (role == #{const WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL})
+        (c_maximize surf maximized)

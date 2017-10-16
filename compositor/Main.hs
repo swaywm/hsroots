@@ -109,9 +109,6 @@ outputHandleSurface comp secs output view = do
         let y = boxY box
         matrixTranslate trans (realToFrac x) (realToFrac y) 0
         withSurfaceMatrix surface (getTransMatrix output) trans $ \mat -> do
-            printMatrix stderr trans
-            printMatrix stderr (getTransMatrix output)
-            hPutStrLn stderr "\n"
             renderWithMatrix (compRenderer comp) texture mat
 
         callbacks <- surfaceGetCallbacks =<< getCurrentState surface
