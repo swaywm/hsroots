@@ -72,7 +72,7 @@ updatePosition cursor seat time = do
             pointerNotifyEnter seat surf x y
             pointerNotifyMotion seat time x y
             keyboardNotifyEnter seat surf
-            activateView view True
+            --activateView view True
 
 
 handleCursorMotion :: Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerMotion -> WayState ()

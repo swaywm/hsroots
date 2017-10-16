@@ -63,7 +63,7 @@ import Graphics.Wayland.WlRoots.Surface
     , callbackGetResource
     , surfaceGetCallbacks
     , callbackGetCallback
-    , getPendingState
+    , getCurrentState
     )
 import Graphics.Wayland.Server
     ( displayInitShm
@@ -110,7 +110,7 @@ outputHandleSurface comp secs output view = do
         withSurfaceMatrix surface (getTransMatrix output) trans $ \mat -> do
             renderWithMatrix (compRenderer comp) texture mat
 
-        callbacks <- surfaceGetCallbacks =<< getPendingState surface
+        callbacks <- surfaceGetCallbacks =<< getCurrentState surface
         forM_ callbacks $ \callback -> do
             cb <- callbackGetCallback callback
             callbackDone cb (floor $ secs * 1000)
@@ -142,7 +142,7 @@ makeCompositor display backend = do
     renderer <- liftIO $ rendererCreate backend
     void $ liftIO $ displayInitShm display
     comp <- liftIO $ compositorCreate display renderer
-    shell <- liftIO $ shellCreate display
+--    shell <- liftIO $ shellCreate display
     xdgShell <- xdgShellCreate display addView removeView
     devManager <- liftIO $ managerCreate display
     xway <- liftIO $ xwaylandCreate display comp
@@ -152,7 +152,7 @@ makeCompositor display backend = do
         { compDisplay = display
         , compRenderer = renderer
         , compCompositor = comp
-        , compShell = shell
+        , compShell = undefined -- shell
         , compXdg = xdgShell
         , compManager = devManager
         , compXWayland = xway
