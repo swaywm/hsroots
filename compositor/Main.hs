@@ -67,6 +67,11 @@ import Graphics.Wayland.WlRoots.Surface
     , surfaceGetCallbacks
     , callbackGetCallback
     , getCurrentState
+    , WlrSurface
+
+    , subSurfaceGetSurface
+    , surfaceGetSubs
+    , subSurfaceGetBox
     )
 import Graphics.Wayland.Server
     ( displayInitShm
@@ -100,15 +105,11 @@ renderOn output rend act = bracket_
     (swapOutputBuffers output)
     (doRender rend output act)
 
-outputHandleSurface :: Compositor -> Double -> Ptr Output -> View -> IO ()
-outputHandleSurface comp secs output view = do
-    surface <- getViewSurface view
+outputHandleSurface :: Compositor -> Double -> Ptr Output -> Ptr WlrSurface -> Int -> Int -> IO ()
+outputHandleSurface comp secs output surface x y = do
     texture <- surfaceGetTexture surface
     isValid <- isTextureValid texture
     when isValid $ withMatrix $ \trans -> do
-        box <- getViewBox view
-        let x = boxX box
-        let y = boxY box
         matrixTranslate trans (realToFrac x) (realToFrac y) 0
         withSurfaceMatrix surface (getTransMatrix output) trans $ \mat -> do
             renderWithMatrix (compRenderer comp) texture mat
@@ -120,11 +121,21 @@ outputHandleSurface comp secs output view = do
             res <- callbackGetResource callback
             resourceDestroy res
 
-        withMatrix $ \stretch -> withMatrix $ \result -> do
-            --matrixScale stretch (fromIntegral $ boxWidth box) (fromIntegral $ boxHeight box) 1
-            matrixIdentity stretch
-            matrixMul (getTransMatrix output) stretch result
-            renderColoredQuad (compRenderer comp) colorWhite result
+        subs <- surfaceGetSubs surface
+        forM_ subs $ \sub -> do
+            box <- subSurfaceGetBox sub
+            hPutStrLn stderr $ show box
+            subsurf <- subSurfaceGetSurface sub
+            outputHandleSurface comp secs output subsurf (x + boxX box) (y + boxY box)
+
+outputHandleView :: Compositor -> Double -> Ptr Output -> View -> IO ()
+outputHandleView comp secs output view = do
+    surface <- getViewSurface view
+    box <- getViewBox view
+    let x = boxX box
+    let y = boxY box
+    outputHandleSurface comp secs output surface x y
+    renderViewAdditional (outputHandleSurface comp secs output) view
 
 
 frameHandler :: IORef Compositor -> Double -> Ptr Output -> WayState ()
@@ -134,7 +145,7 @@ frameHandler compRef secs output = do
     liftIO $ do
         comp <- readIORef compRef
         renderOn output (compRenderer comp) $ do
-            mapM_ (outputHandleSurface comp secs output) views
+            mapM_ (outputHandleView comp secs output) views
 
 
 removeView :: Int -> WayState ()

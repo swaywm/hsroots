@@ -3,7 +3,7 @@ module Input.Cursor
 where
 
 import System.IO
-import View (getViewSurface, activateView)
+import View (getViewSurface, activateView, getViewEventSurface)
 import Data.Word (Word32)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -50,7 +50,7 @@ cursorCreate layout seat = do
     liftIO $ mapToRegion cursor Nothing
 
     let signal = cursorGetEvents cursor
-    tokb <- liftIO $ addListener (WlListener $ handleCursorButton cursor) $ cursorButton signal
+    tokb <- liftIO $ addListener (WlListener $ \evt -> runWayState (handleCursorButton cursor seat evt) stateRef) $ cursorButton signal
     tokm <- liftIO $ addListener (WlListener $ \evt -> runWayState (handleCursorMotion cursor seat evt)    stateRef)$ cursorMotion signal
     toka <- liftIO $ addListener (WlListener $ \evt -> runWayState (handleCursorMotionAbs cursor seat evt) stateRef)$ cursorMotionAbs signal
 
@@ -61,24 +61,19 @@ cursorCreate layout seat = do
 
 updatePosition :: Ptr WlrCursor -> Ptr WlrSeat -> Word32 -> WayState ()
 updatePosition cursor seat time = do
-    x <- liftIO $ getCursorX cursor
-    y <- liftIO $ getCursorY cursor
+    baseX <- liftIO $ getCursorX cursor
+    baseY <- liftIO $ getCursorY cursor
 
-    liftIO $ do
-        hPutStr stderr "Cursor is at: "
-        hPutStr stderr $ show x
-        hPutStr stderr "x"
-        hPutStrLn stderr $ show y
-
-    viewM <- viewBelow $ Point (floor x) (floor y)
+    viewM <- viewBelow $ Point (floor baseX) (floor baseY)
 
     case viewM of
         Nothing -> liftIO $ pointerClearFocus seat
         Just view -> liftIO $ do
-            surf <- getViewSurface view
+            evt@(surf, x, y) <- getViewEventSurface view baseX baseY
+            hPutStrLn stderr $ show evt
             pointerNotifyEnter seat surf x y
             pointerNotifyMotion seat time x y
-            keyboardNotifyEnter seat surf
+            --keyboardNotifyEnter seat surf
 
 
 handleCursorMotion :: Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerMotion -> WayState ()
@@ -103,5 +98,16 @@ handleCursorMotionAbs cursor seat event_ptr = do
         (eventPointerAbsMotionY event / eventPointerAbsMotionHeight event)
     updatePosition cursor seat (fromIntegral $ eventPointerAbsMotionTime event `mod` 1e6 `div` 1000)
 
-handleCursorButton :: Ptr WlrCursor -> Ptr WlrEventPointerButton -> IO ()
-handleCursorButton _ _ = pure ()
+handleCursorButton :: Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerButton -> WayState ()
+handleCursorButton cursor seat event_ptr = do
+    x <- liftIO $ getCursorX cursor
+    y <- liftIO $ getCursorY cursor
+    event <- liftIO $ peek event_ptr
+
+    viewM <- viewBelow $ Point (floor x) (floor y)
+
+    case viewM of
+        Nothing -> liftIO $ pointerClearFocus seat
+        Just view -> liftIO $ do
+            let time = (fromIntegral $ eventPointerButtonTime event `mod` 1e6 `div` 1000)
+            pointerNotifyButton seat time (eventPointerButtonButton event) (eventPointerButtonState event)

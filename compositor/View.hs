@@ -9,6 +9,8 @@ module View
     , resizeView
     , getViewSurface
     , activateView
+    , renderViewAdditional
+    , getViewEventSurface
     )
 where
 
@@ -18,6 +20,7 @@ import Data.Word (Word32)
 import Foreign.Ptr (Ptr)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Box (WlrBox(..))
+import Graphics.Wayland.WlRoots.Output (Output)
 
 class ShellSurface a where
     getSurface :: MonadIO m => a -> m (Ptr WlrSurface)
@@ -25,6 +28,8 @@ class ShellSurface a where
     resize :: MonadIO m => a -> Word32 -> Word32 -> m ()
     activate :: MonadIO m => a -> Bool -> m ()
     close :: MonadIO m => a -> m ()
+    renderAdditional :: MonadIO m => (Ptr WlrSurface -> Int -> Int -> m ()) -> a -> Int -> Int -> m ()
+    getEventSurface :: MonadIO m => a -> Double -> Double -> m (Ptr WlrSurface, Double, Double)
 
 data View = forall a. ShellSurface a => View
     { viewX :: IORef Double
@@ -77,3 +82,15 @@ activateView :: MonadIO m => View -> Bool -> m ()
 activateView view active = case view of
     (View _ _ surf) -> do
         activate surf active
+
+renderViewAdditional :: MonadIO m => (Ptr WlrSurface -> Int -> Int -> m ()) -> View -> m ()
+renderViewAdditional fun (View xref yref surf) = do
+    x <- liftIO $ readIORef xref
+    y <- liftIO $ readIORef yref
+    renderAdditional fun surf (floor x) (floor y)
+
+getViewEventSurface :: MonadIO m => View -> Double -> Double -> m (Ptr WlrSurface, Double, Double)
+getViewEventSurface (View xref yref surf) x y = do
+    viewX <- liftIO $ readIORef xref
+    viewY <- liftIO $ readIORef yref
+    getEventSurface surf (x - viewX) (y - viewY)

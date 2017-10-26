@@ -11,6 +11,7 @@ module Graphics.Wayland.WlRoots.Seat
     , keyboardNotifyEnter
 
     , pointerClearFocus
+    , pointerNotifyButton
 
     , attachKeyboard
     )
@@ -27,6 +28,7 @@ import Data.Bits ((.|.))
 import Graphics.Wayland.Server (DisplayServer(..), Client (..), SeatCapability(..))
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
+import Graphics.Wayland.WlRoots.Input.Buttons
 
 data WlrSeat
 
@@ -88,3 +90,9 @@ foreign import ccall "wlr_seat_attach_keyboard" c_attach_keyboard :: Ptr WlrSeat
 
 attachKeyboard :: Ptr WlrSeat -> Ptr InputDevice -> IO ()
 attachKeyboard = c_attach_keyboard
+
+foreign import ccall unsafe "wlr_seat_pointer_notify_button" c_notify_button :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> IO ()
+
+pointerNotifyButton :: Ptr WlrSeat -> Word32 -> Word32 -> ButtonState -> IO ()
+pointerNotifyButton seat time button state =
+    c_notify_button seat time button (buttonStateToInt state)

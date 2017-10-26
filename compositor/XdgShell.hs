@@ -7,13 +7,16 @@ module XdgShell
     )
 where
 
+import System.IO
 import View
 import Waymonad
+import Control.Monad (when, filterM, forM_)
 import Control.Monad.IO.Class
 import Control.Monad.Reader (ask)
 import Data.Composition ((.:))
 
 import Graphics.Wayland.WlRoots.Box (WlrBox (..))
+import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr, ptrToIntPtr)
 import qualified Graphics.Wayland.WlRoots.XdgShell as R
@@ -62,21 +65,46 @@ handleXdgDestroy stateRef ref delFun surf = do
 
 handleXdgSurface :: WayStateRef -> MapRef -> (Int -> View -> WayState ()) -> (Int -> WayState ()) -> Ptr R.WlrXdgSurface -> IO ()
 handleXdgSurface stateRef ref addFun delFun surf = do
-    let xdgSurf = XdgSurface surf
-    modifyIORef ref $ M.insert (ptrToInt surf) xdgSurf
-    view <- createView xdgSurf
-    runWayState (addFun (ptrToInt surf) view) stateRef
-    activate xdgSurf True
-    R.setMaximized surf True
+    isPopup <- R.isXdgPopup surf
+    when (not isPopup) $ do
+        let xdgSurf = XdgSurface surf
+        modifyIORef ref $ M.insert (ptrToInt surf) xdgSurf
+        view <- createView xdgSurf
+        runWayState (addFun (ptrToInt surf) view) stateRef
+        activate xdgSurf True
+        R.setMaximized surf True
 
-    let signals = R.getXdgSurfaceEvents surf
-    handler <- addListener (WlListener $ handleXdgDestroy stateRef ref delFun) (R.xdgSurfacEvtDestroy signals)
-    sptr <- newStablePtr handler
-    poke (R.getXdgSurfaceDataPtr surf) (castStablePtrToPtr sptr)
+        let signals = R.getXdgSurfaceEvents surf
+        handler <- addListener (WlListener $ handleXdgDestroy stateRef ref delFun) (R.xdgSurfacEvtDestroy signals)
+        sptr <- newStablePtr handler
+        poke (R.getXdgSurfaceDataPtr surf) (castStablePtrToPtr sptr)
 
 
 getXdgSurfaces :: XdgShell -> IO [Ptr R.WlrXdgSurface]
 getXdgSurfaces = fmap (fmap unXdg . M.elems) . readIORef . xdgSurfaceRef
+
+renderPopups :: MonadIO m => (Ptr WlrSurface -> Int -> Int -> m ()) -> Ptr R.WlrXdgSurface -> Int -> Int -> m ()
+renderPopups fun surf baseX baseY = do
+    popups <- liftIO $ filterM R.isConfigured =<< R.getPopups surf
+    surfBox <- liftIO $ R.getGeometry surf
+    let surfX = boxX surfBox
+    let surfY = boxY surfBox
+    forM_ popups $ \popup -> do
+        popBox <- liftIO $ R.getGeometry popup
+        let popX = boxX popBox
+        let popY = boxY popBox
+
+        stateBox <- liftIO $ R.getPopupGeometry popup
+        let stateX = boxX stateBox
+        let stateY = boxY stateBox
+
+        let x = baseX + surfX + stateX - popX
+        let y = baseY + surfY + stateY - popY
+
+        wlrsurf <- liftIO $ R.xdgSurfaceGetSurface popup
+
+        fun wlrsurf x y
+        renderPopups fun popup x y
 
 
 instance ShellSurface XdgSurface where
@@ -88,3 +116,15 @@ instance ShellSurface XdgSurface where
     resize (XdgSurface surf) width height =
         liftIO $ R.setSize surf width height
     activate = liftIO .: R.setActivated . unXdg
+    renderAdditional fun (XdgSurface surf) x y = renderPopups fun surf x y
+    getEventSurface (XdgSurface surf) x y = liftIO $ do
+        mPop <- R.xdgPopupAt surf x y
+        case mPop of
+            Nothing -> do
+                realS <- R.xdgSurfaceGetSurface surf
+                pure (realS, x, y)
+            Just (popup, newx, newy) -> do
+                realS <- R.xdgSurfaceGetSurface popup
+                pure (realS, x - newx, y - newy)
+
+

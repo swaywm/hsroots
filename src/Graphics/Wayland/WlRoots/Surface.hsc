@@ -1,4 +1,5 @@
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Graphics.Wayland.WlRoots.Surface
     ( WlrSurface
     , withSurfaceMatrix
@@ -17,6 +18,11 @@ module Graphics.Wayland.WlRoots.Surface
 
     , getPendingState
     , getCurrentState
+
+    , WlrSubSurface
+    , subSurfaceGetSurface
+    , surfaceGetSubs
+    , subSurfaceGetBox
     )
 where
 
@@ -25,13 +31,14 @@ where
 import Data.Word (Word32)
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr, castPtr, plusPtr)
-import Foreign.C.Types (CFloat(..))
+import Foreign.C.Types (CFloat(..), CInt(..))
 import Data.Composition ((.:))
 import Foreign.C.Error (throwErrnoIfNull)
 
 import Graphics.Wayland.Resource (WlResource)
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..), withMatrix)
 import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
+import Graphics.Wayland.WlRoots.Box (WlrBox(..))
 import Graphics.Wayland.List (getListFromHead)
 import Graphics.Wayland.Server (Callback(..))
 
@@ -71,6 +78,21 @@ surfaceGetMain = c_get_main_surface
 
 data WlrSurfaceState
 
+stateGetSubsurfaceBox :: Ptr WlrSurfaceState -> IO WlrBox
+stateGetSubsurfaceBox state = do
+    x :: Word32 <- #{peek struct wlr_surface_state, subsurface_position.x} state
+    y :: Word32 <- #{peek struct wlr_surface_state, subsurface_position.y} state
+
+    width :: CInt <- #{peek struct wlr_surface_state, width} state
+    height :: CInt <- #{peek struct wlr_surface_state, width} state
+
+    pure WlrBox
+        { boxX = fromIntegral x
+        , boxY = fromIntegral y
+        , boxHeight = fromIntegral height
+        , boxWidth = fromIntegral width
+        }
+
 data WlrFrameCallback
 
 callbackGetResource :: Ptr WlrFrameCallback -> IO (Ptr WlResource)
@@ -90,3 +112,17 @@ getPendingState = #{peek struct wlr_surface, pending}
 
 getCurrentState :: Ptr WlrSurface -> IO (Ptr WlrSurfaceState)
 getCurrentState = #{peek struct wlr_surface, current}
+
+
+data WlrSubSurface
+
+subSurfaceGetSurface :: Ptr WlrSubSurface -> IO (Ptr WlrSurface)
+subSurfaceGetSurface = #{peek struct wlr_subsurface, surface}
+
+surfaceGetSubs :: Ptr WlrSurface -> IO [Ptr WlrSubSurface]
+surfaceGetSubs surf = do
+    let list = #{ptr struct wlr_surface, subsurface_list} surf
+    getListFromHead list #{offset struct wlr_subsurface, parent_link}
+
+subSurfaceGetBox :: Ptr WlrSubSurface -> IO WlrBox
+subSurfaceGetBox surf = stateGetSubsurfaceBox =<< getCurrentState =<< subSurfaceGetSurface surf

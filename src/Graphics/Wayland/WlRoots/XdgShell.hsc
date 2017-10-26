@@ -15,6 +15,13 @@ module Graphics.Wayland.WlRoots.XdgShell
     , getGeometry
     , setActivated
     , setMaximized
+
+    , getPopups
+    , isXdgPopup
+    , isConfigured
+
+    , getPopupGeometry
+    , xdgPopupAt
     )
 where
 
@@ -22,9 +29,10 @@ where
 
 import Data.Word (Word32)
 import Foreign.Storable (Storable(..))
-import Foreign.Ptr (Ptr, plusPtr)
+import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.C.Types (CInt)
 import Foreign.C.Error (throwErrnoIfNull)
+import Foreign.Marshal.Alloc (alloca)
 import Foreign.StablePtr
     ( newStablePtr
     , castStablePtrToPtr
@@ -33,6 +41,7 @@ import Foreign.StablePtr
 import Graphics.Wayland.Server (DisplayServer(..))
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Box (WlrBox)
+import Graphics.Wayland.List (getListFromHead)
 
 import Graphics.Wayland.Signal
 import Control.Monad (when)
@@ -56,6 +65,14 @@ xdgShellCreate new (DisplayServer ptr) = do
 
 data WlrXdgSurface
 
+isConfigured :: Ptr WlrXdgSurface -> IO Bool
+isConfigured = #{peek struct wlr_xdg_surface_v6, configured}
+
+isXdgPopup :: Ptr WlrXdgSurface -> IO Bool
+isXdgPopup surf = do
+    role :: CInt <- #{peek struct wlr_xdg_surface_v6, role} surf
+    pure (role == #{const WLR_XDG_SURFACE_V6_ROLE_POPUP})
+
 data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
     { xdgSurfacEvtDestroy :: Ptr (WlSignal WlrXdgSurface)
 
@@ -74,6 +91,18 @@ getXdgSurfaceEvents ptr = WlrXdgSurfaceEvents
 
 getXdgSurfaceDataPtr :: Ptr WlrXdgSurface -> Ptr (Ptr ())
 getXdgSurfaceDataPtr = #{ptr struct wlr_xdg_surface_v6, data}
+
+foreign import ccall "wlr_xdg_surface_v6_popup_at" c_popup_at :: Ptr WlrXdgSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrXdgSurface)
+
+xdgPopupAt :: Ptr WlrXdgSurface -> Double -> Double -> IO (Maybe (Ptr WlrXdgSurface, Double, Double))
+xdgPopupAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
+    popup <- c_popup_at surf x y xptr yptr
+    if popup == nullPtr
+        then pure Nothing
+        else do
+            newx <- peek xptr
+            newy <- peek yptr
+            pure $ Just (popup, newx, newy)
 
 
 foreign import ccall "wlr_xdg_toplevel_v6_send_close" c_close :: Ptr WlrXdgSurface -> IO ()
@@ -120,3 +149,17 @@ setMaximized surf maximized = do
     when
         (role == #{const WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL})
         (c_maximize surf maximized)
+
+
+getPopups :: Ptr WlrXdgSurface -> IO [Ptr WlrXdgSurface]
+getPopups surf = do
+    let list = #{ptr struct wlr_xdg_surface_v6, popups} surf
+    getListFromHead list #{offset struct wlr_xdg_surface_v6, popup_link}
+
+data WlrXdgPopupState
+
+getPopupState :: Ptr WlrXdgSurface -> IO (Ptr WlrXdgPopupState)
+getPopupState = #{peek struct wlr_xdg_surface_v6, popup_state}
+
+getPopupGeometry :: Ptr WlrXdgSurface -> IO WlrBox
+getPopupGeometry surf = #{peek struct wlr_xdg_popup_v6, geometry} =<< getPopupState surf
