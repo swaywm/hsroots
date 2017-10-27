@@ -8,6 +8,12 @@ import XdgShell
     ( XdgShell
     , xdgShellCreate
     )
+import XWayland
+    ( XWayShell
+    , xwayShellCreate
+    )
+
+
 import Waymonad
 import Shared
 import View
@@ -18,15 +24,13 @@ import Foreign.Ptr (Ptr, ptrToIntPtr)
 import Data.IORef (newIORef, IORef, writeIORef, readIORef)
 
 import Graphics.Wayland.Resource (resourceDestroy)
-import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix, matrixTranslate, printMatrix, matrixScale, matrixMul, matrixIdentity)
+import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix, matrixTranslate)
 import Graphics.Wayland.WlRoots.Box (WlrBox (..))
-import Graphics.Wayland.WlRoots.Render.Color (colorWhite)
 import Graphics.Wayland.WlRoots.Render
     ( Renderer
     , doRender
     , isTextureValid
     , renderWithMatrix
-    , renderColoredQuad
     )
 import Graphics.Wayland.WlRoots.Backend (Backend)
 import Graphics.Wayland.WlRoots.XCursor
@@ -38,11 +42,7 @@ import Graphics.Wayland.WlRoots.Render.Gles2 (rendererCreate)
 import Graphics.Wayland.WlRoots.Compositor (WlrCompositor, compositorCreate)
 import Graphics.Wayland.WlRoots.Shell
     ( WlrShell
-    , shellCreate
-    )
-import Graphics.Wayland.WlRoots.XWayland
-    ( XWayland
-    , xwaylandCreate
+    , --shellCreate
     )
 import Graphics.Wayland.WlRoots.DeviceManager
     ( WlrDeviceManager
@@ -90,7 +90,7 @@ data Compositor = Compositor
     , compShell :: Ptr WlrShell
     , compXdg :: XdgShell
     , compManager :: Ptr WlrDeviceManager
-    , compXWayland :: Ptr XWayland
+    , compXWayland :: XWayShell
     , compBackend :: Ptr Backend
     , compLayout :: Ptr WlrOutputLayout
     , compInput :: Input
@@ -165,7 +165,7 @@ makeCompositor display backend = do
 --    shell <- liftIO $ shellCreate display
     xdgShell <- xdgShellCreate display addView removeView
     devManager <- liftIO $ managerCreate display
-    xway <- liftIO $ xwaylandCreate display comp
+    xway <- xwayShellCreate display comp addView removeView
     layout <- liftIO $ createOutputLayout
     input <- inputCreate display layout backend
     pure $ Compositor

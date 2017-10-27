@@ -20,7 +20,6 @@ import Data.Word (Word32)
 import Foreign.Ptr (Ptr)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Box (WlrBox(..))
-import Graphics.Wayland.WlRoots.Output (Output)
 
 class ShellSurface a where
     getSurface :: MonadIO m => a -> m (Ptr WlrSurface)
@@ -29,7 +28,10 @@ class ShellSurface a where
     activate :: MonadIO m => a -> Bool -> m ()
     close :: MonadIO m => a -> m ()
     renderAdditional :: MonadIO m => (Ptr WlrSurface -> Int -> Int -> m ()) -> a -> Int -> Int -> m ()
+    renderAdditional _ _ _ _ = pure ()
     getEventSurface :: MonadIO m => a -> Double -> Double -> m (Ptr WlrSurface, Double, Double)
+    setPosition :: MonadIO m => a -> Double -> Double -> m ()
+    setPosition _ _ _ = pure ()
 
 data View = forall a. ShellSurface a => View
     { viewX :: IORef Double
@@ -38,17 +40,16 @@ data View = forall a. ShellSurface a => View
     }
 
 getViewBox :: MonadIO m => View -> m WlrBox
-getViewBox view = case view of
-    (View xref yref surf) -> do
-        (width, height) <- getSize surf
-        x <- liftIO $ readIORef xref
-        y <- liftIO $ readIORef yref
-        pure WlrBox
-            { boxX = floor x
-            , boxY = floor y
-            , boxWidth  = floor width
-            , boxHeight = floor height
-            }
+getViewBox (View xref yref surf) = do
+    (width, height) <- getSize surf
+    x <- liftIO $ readIORef xref
+    y <- liftIO $ readIORef yref
+    pure WlrBox
+        { boxX = floor x
+        , boxY = floor y
+        , boxWidth  = floor width
+        , boxHeight = floor height
+        }
 
 createView :: (ShellSurface a, MonadIO m) => a -> m View
 createView surf = do
@@ -62,26 +63,23 @@ createView surf = do
 
 
 moveView :: MonadIO m => View -> Double -> Double -> m ()
-moveView view x y = do
-    liftIO $ writeIORef (viewX view) x
-    liftIO $ writeIORef (viewY view) y
+moveView (View xref yref surf) x y = do
+    liftIO $ writeIORef xref x
+    liftIO $ writeIORef yref y
+    setPosition surf x y
 
 
 resizeView :: MonadIO m => View -> Double -> Double -> m ()
-resizeView view width height = case view of
-    (View _ _ surf) -> do
-        resize surf (floor width) (floor height)
+resizeView (View _ _ surf) width height = resize surf (floor width) (floor height)
 
 
 getViewSurface :: MonadIO m => View -> m (Ptr WlrSurface)
-getViewSurface view = case view of
-    (View _ _ surf) -> do
-        getSurface surf
+getViewSurface (View _ _ surf) = getSurface surf
+
 
 activateView :: MonadIO m => View -> Bool -> m ()
-activateView view active = case view of
-    (View _ _ surf) -> do
-        activate surf active
+activateView (View _ _ surf) active = activate surf active
+
 
 renderViewAdditional :: MonadIO m => (Ptr WlrSurface -> Int -> Int -> m ()) -> View -> m ()
 renderViewAdditional fun (View xref yref surf) = do
@@ -89,8 +87,9 @@ renderViewAdditional fun (View xref yref surf) = do
     y <- liftIO $ readIORef yref
     renderAdditional fun surf (floor x) (floor y)
 
+
 getViewEventSurface :: MonadIO m => View -> Double -> Double -> m (Ptr WlrSurface, Double, Double)
 getViewEventSurface (View xref yref surf) x y = do
-    viewX <- liftIO $ readIORef xref
-    viewY <- liftIO $ readIORef yref
-    getEventSurface surf (x - viewX) (y - viewY)
+    ownX <- liftIO $ readIORef xref
+    ownY <- liftIO $ readIORef yref
+    getEventSurface surf (x - ownX) (y - ownY)

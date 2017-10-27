@@ -3,7 +3,7 @@ module Input.Cursor
 where
 
 import System.IO
-import View (getViewSurface, activateView, getViewEventSurface)
+import View (getViewEventSurface)
 import Data.Word (Word32)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -108,6 +108,6 @@ handleCursorButton cursor seat event_ptr = do
 
     case viewM of
         Nothing -> liftIO $ pointerClearFocus seat
-        Just view -> liftIO $ do
+        Just _ -> liftIO $ do
             let time = (fromIntegral $ eventPointerButtonTime event `mod` 1e6 `div` 1000)
             pointerNotifyButton seat time (eventPointerButtonButton event) (eventPointerButtonState event)

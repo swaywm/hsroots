@@ -170,6 +170,7 @@ executable compositor
 
   other-modules:        Shared
   other-modules:        XdgShell
+  other-modules:        XWayland
   other-modules:        View
   other-modules:        Input
   other-modules:        Input.Keyboard
