@@ -69,11 +69,10 @@ updatePosition cursor seat time = do
     case viewM of
         Nothing -> liftIO $ pointerClearFocus seat
         Just view -> liftIO $ do
-            evt@(surf, x, y) <- getViewEventSurface view baseX baseY
-            hPutStrLn stderr $ show evt
+            (surf, x, y) <- getViewEventSurface view baseX baseY
             pointerNotifyEnter seat surf x y
             pointerNotifyMotion seat time x y
-            --keyboardNotifyEnter seat surf
+            keyboardNotifyEnter seat surf
 
 
 handleCursorMotion :: Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerMotion -> WayState ()

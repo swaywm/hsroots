@@ -141,7 +141,6 @@ handleKeyPress hooks dsp backend keyboard ptr = do
     keyState <- getKeystate keyboard
     syms <- getStateSymsI keyState keycode
     let keyDir = (keyStateToDirection $ state event)
-    hPutStrLn stderr . intercalate "," $ map keysymName syms
     forM_ syms $ \sym -> case sym of
         Keysym_Escape -> displayTerminate dsp
         -- Would be cooler if this wasn't a listing of VTs (probably TH)

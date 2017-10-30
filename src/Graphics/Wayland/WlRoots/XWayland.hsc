@@ -23,6 +23,7 @@ where
 
 #include <wlr/xwayland.h>
 
+import System.IO
 import Data.Word (Word16, Word32)
 import Data.Int (Int16)
 import Foreign.Storable (Storable(..))
@@ -88,10 +89,11 @@ activateX11Surface :: Ptr XWayland -> Maybe (Ptr X11Surface) -> IO ()
 activateX11Surface xway Nothing = activateX11Surface xway (Just nullPtr)
 activateX11Surface xway (Just ptr) = c_activate xway ptr
 
-foreign import ccall "wlr_xwayland_surface_configure" c_configure :: Ptr XWayland -> Ptr X11Surface -> Double -> Double -> Word32 -> Word32 -> IO ()
+foreign import ccall "wlr_xwayland_surface_configure" c_configure :: Ptr XWayland -> Ptr X11Surface -> Int16 -> Int16 -> Word32 -> Word32 -> IO ()
 
-configureX11Surface :: Ptr XWayland -> Ptr X11Surface -> Double -> Double -> Word32 -> Word32 -> IO ()
-configureX11Surface = c_configure
+configureX11Surface :: Ptr XWayland -> Ptr X11Surface -> Int16 -> Int16 -> Word32 -> Word32 -> IO ()
+configureX11Surface xway surf x y width height =
+    c_configure xway surf x y width height
 
 
 getX11SurfacePosition :: Ptr X11Surface -> IO (Point)

@@ -14,6 +14,7 @@ import XWayland
     )
 
 
+import Control.Monad.IO.Class (MonadIO)
 import Waymonad
 import Shared
 import View
@@ -96,6 +97,8 @@ data Compositor = Compositor
     , compInput :: Input
     }
 
+
+
 ptrToInt :: Num b => Ptr a -> b
 ptrToInt = fromIntegral . ptrToIntPtr
 
@@ -124,7 +127,6 @@ outputHandleSurface comp secs output surface x y = do
         subs <- surfaceGetSubs surface
         forM_ subs $ \sub -> do
             box <- subSurfaceGetBox sub
-            hPutStrLn stderr $ show box
             subsurf <- subSurfaceGetSurface sub
             outputHandleSurface comp secs output subsurf (x + boxX box) (y + boxY box)
 
@@ -147,14 +149,50 @@ frameHandler compRef secs output = do
         renderOn output (compRenderer comp) $ do
             mapM_ (outputHandleView comp secs output) views
 
+adjustPosition :: MonadIO m => [View] -> WlrBox -> Bool -> m ()
+adjustPosition [] _ _ = pure ()
+adjustPosition [v] box _ = do
+    let x = fromIntegral $ boxX box
+    let y = fromIntegral $ boxY box
+    moveView v x y
+
+    let width = fromIntegral $ boxWidth box
+    let height = fromIntegral $ boxHeight box
+    resizeView v width height
+adjustPosition (v:vs) box True = do
+    let x = fromIntegral $ boxX box
+    let y = fromIntegral $ boxY box
+    moveView v x y
+
+    let width = fromIntegral $ boxWidth box `div` 2
+    let height = fromIntegral $ boxHeight box
+    resizeView v width height
+    adjustPosition vs box { boxX = floor x + floor width, boxWidth = floor width } False
+adjustPosition (v:vs) box False = do
+    let x = fromIntegral $ boxX box
+    let y = fromIntegral $ boxY box
+    moveView v x y
+
+    let width = fromIntegral $ boxWidth box
+    let height = fromIntegral $ boxHeight box `div` 2
+    resizeView v width height
+    adjustPosition vs box { boxY = floor y + floor height, boxHeight = floor height } True
+
+reLayout :: WayState ()
+reLayout = do
+    views <- get
+    adjustPosition (M.elems views) (WlrBox 0 0 1300 700) True
+
 
 removeView :: Int -> WayState ()
 removeView key = do
     modify $ M.delete key
+    reLayout
 
 addView ::  Int -> View -> WayState ()
 addView key value = do
     modify $ M.insert key value
+    reLayout
 
 
 makeCompositor :: DisplayServer -> Ptr Backend -> WayState Compositor
