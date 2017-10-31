@@ -40,11 +40,11 @@ import Data.Word (Word32)
 import Foreign.C.Error (throwErrnoIf_)
 import Foreign.C.Types (CInt(..))
 
-import Graphics.Wayland.WlRoots.Util.List (WlrList(..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Box (WlrBox(..))
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Server (OutputTransform(..))
+import Graphics.Wayland.List (getListFromHead)
 
 data Output
 
@@ -133,8 +133,7 @@ getName = peekCString . #{ptr struct wlr_output, name}
 getModes :: Ptr Output -> IO [Ptr OutputMode]
 getModes ptr = do
     listptr <- #{peek struct wlr_output, modes} ptr
-    wlrlist <- peek listptr
-    pure $ items wlrlist
+    getListFromHead listptr #{offset struct wlr_output_mode, link}
 
 getTransMatrix :: Ptr Output -> Matrix
 getTransMatrix = 

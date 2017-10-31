@@ -265,11 +265,14 @@ handleOutputAdd
     -> Ptr Output 
     -> IO FrameHandler
 handleOutputAdd ref stateRef mapRef output = do
+    hPutStrLn stderr "Found output"
     writeIORef mapRef [("1", ptrToInt output)]
     comp <- readIORef ref
 
     setCursorImage output (inputXCursor $ compInput comp)
+    hPutStrLn stderr "Set cursor image"
     addOutputAuto (compLayout comp) output
+    hPutStrLn stderr "Added output to layout "
 
     pure $ \secs out ->
         runLayoutCache (frameHandler ref secs out) stateRef

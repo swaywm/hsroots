@@ -11,7 +11,7 @@ import Graphics.Wayland.Signal
     ( addListener
     , WlListener (..)
     )
-import Graphics.Wayland.WlRoots.Seat (WlrSeat, attachKeyboard)
+import Graphics.Wayland.WlRoots.Seat (WlrSeat, keyboardNotifyKey, keyboardNotifyModifiers, seatSetKeyboard)
 import Graphics.Wayland.WlRoots.Backend.Multi (getSession')
 import Graphics.Wayland.WlRoots.Backend.Session (changeVT)
 import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard)
@@ -26,6 +26,9 @@ import Graphics.Wayland.WlRoots.Input.Keyboard
     , KeyState (..)
     , setKeymap
     , getKeystate
+
+    , KeyboardModifiers (..)
+    , readModifiers
     )
 import Foreign.StablePtr
     ( newStablePtr
@@ -47,7 +50,7 @@ import Text.XkbCommon.KeysymPatterns
 
 data Keyboard = Keyboard
     { keyboardDevice :: Ptr WlrKeyboard
-
+    , keyboardIDevice :: Ptr InputDevice
     }
 
 keyStateToDirection :: KeyState -> Direction
@@ -62,11 +65,11 @@ switchVT backend vt = do
         Nothing -> pure ()
         Just s -> changeVT s vt
 
-handleKeyPress :: DisplayServer -> Ptr Backend -> Ptr WlrKeyboard -> Ptr EventKey -> IO ()
-handleKeyPress dsp backend keyboard ptr = do
+handleKeyPress :: DisplayServer -> Ptr Backend -> Keyboard -> Ptr WlrSeat -> Ptr EventKey -> IO ()
+handleKeyPress dsp backend keyboard seat ptr = do
     event <- peek ptr
     let keycode = fromEvdev . fromIntegral . keyCode $ event
-    keyState <- getKeystate keyboard
+    keyState <- getKeystate $ keyboardDevice keyboard
     syms <- getStateSymsI keyState keycode
     let keyDir = (keyStateToDirection $ state event)
     hPutStrLn stderr . intercalate "," $ map keysymName syms
@@ -85,7 +88,15 @@ handleKeyPress dsp backend keyboard ptr = do
         Keysym_XF86Switch_VT_10 -> switchVT backend 10
         Keysym_XF86Switch_VT_11 -> switchVT backend 11
         Keysym_XF86Switch_VT_12 -> switchVT backend 12
-        _ -> pure ()
+        _ -> do
+            seatSetKeyboard seat $ keyboardIDevice keyboard
+            keyboardNotifyKey seat (timeSec event) (keyCode event) (state event)
+
+handleModifiers :: Keyboard -> Ptr WlrSeat -> Ptr a -> IO ()
+handleModifiers keyboard seat _ = do
+    mods <- readModifiers $ keyboardDevice keyboard
+    seatSetKeyboard seat $ keyboardIDevice keyboard
+    keyboardNotifyModifiers seat (modDepressed mods) (modLatched mods) (modLocked mods) (modGroup mods)
 
 handleKeyboardAdd :: DisplayServer -> Ptr Backend -> Ptr WlrSeat -> Ptr InputDevice -> Ptr WlrKeyboard -> IO ()
 handleKeyboardAdd dsp backend seat dev ptr = do
@@ -96,11 +107,12 @@ handleKeyboardAdd dsp backend seat dev ptr = do
 
     setKeymap ptr keymap
 
-    handler <- addListener (WlListener $ handleKeyPress dsp backend ptr) (keySignalKey signals)
-    sptr <- newStablePtr handler
-    poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
-    attachKeyboard seat dev
+    let keyboard = Keyboard ptr dev
 
+    kh <- addListener (WlListener $ handleKeyPress dsp backend keyboard seat) (keySignalKey signals)
+    mh <- addListener (WlListener $ handleModifiers keyboard seat) (keySignalModifiers signals)
+    sptr <- newStablePtr (kh, mh)
+    poke (getKeyDataPtr ptr) (castStablePtrToPtr sptr)
 
 
 handleKeyboardRemove :: Ptr WlrKeyboard -> IO ()

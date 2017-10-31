@@ -13,7 +13,9 @@ module Graphics.Wayland.WlRoots.Seat
     , pointerClearFocus
     , pointerNotifyButton
 
-    , attachKeyboard
+    , keyboardNotifyKey
+    , keyboardNotifyModifiers
+    , seatSetKeyboard
     )
 where
 
@@ -29,6 +31,7 @@ import Graphics.Wayland.Server (DisplayServer(..), Client (..), SeatCapability(.
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Buttons
+import Graphics.Wayland.WlRoots.Input.Keyboard (KeyState(..), keyStateToInt)
 
 data WlrSeat
 
@@ -46,7 +49,7 @@ destroySeat = c_destroy
 
 data WlrSeatHandle
 
-foreign import ccall "wlr_seat_handle_for_client" c_handle_for_client :: Ptr WlrSeat -> Ptr Client -> IO (Ptr WlrSeatHandle)
+foreign import ccall "wlr_seat_client_for_wl_client" c_handle_for_client :: Ptr WlrSeat -> Ptr Client -> IO (Ptr WlrSeatHandle)
 
 handleForClient :: Ptr WlrSeat -> Client -> IO (Ptr WlrSeatHandle)
 handleForClient seat (Client client) =
@@ -86,13 +89,24 @@ pointerClearFocus :: Ptr WlrSeat -> IO ()
 pointerClearFocus = c_pointer_clear_focus
 
 
-foreign import ccall "wlr_seat_attach_keyboard" c_attach_keyboard :: Ptr WlrSeat -> Ptr InputDevice -> IO ()
-
-attachKeyboard :: Ptr WlrSeat -> Ptr InputDevice -> IO ()
-attachKeyboard = c_attach_keyboard
-
 foreign import ccall unsafe "wlr_seat_pointer_notify_button" c_notify_button :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> IO ()
 
 pointerNotifyButton :: Ptr WlrSeat -> Word32 -> Word32 -> ButtonState -> IO ()
 pointerNotifyButton seat time button state =
     c_notify_button seat time button (buttonStateToInt state)
+
+
+foreign import ccall "wlr_seat_keyboard_notify_key" c_notify_key :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> IO ()
+
+keyboardNotifyKey :: Ptr WlrSeat -> Word32 -> Word32 -> KeyState -> IO ()
+keyboardNotifyKey seat time key state = c_notify_key seat time key (keyStateToInt state)
+
+foreign import ccall "wlr_seat_keyboard_notify_modifiers" c_notify_modifiers :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+
+keyboardNotifyModifiers :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+keyboardNotifyModifiers = c_notify_modifiers
+
+foreign import ccall unsafe "wlr_seat_set_keyboard" c_set_keyboard :: Ptr WlrSeat  -> Ptr InputDevice -> IO ()
+
+seatSetKeyboard :: Ptr WlrSeat -> Ptr InputDevice -> IO ()
+seatSetKeyboard = c_set_keyboard

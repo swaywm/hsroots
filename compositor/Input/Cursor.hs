@@ -108,7 +108,7 @@ handleCursorMotion layout cursor seat event_ptr = do
         (Just $ eventPointerMotionDevice event)
         (eventPointerMotionDeltaX event)
         (eventPointerMotionDeltaY event)
-    updatePosition layout cursor seat (fromIntegral $ eventPointerMotionTime event `mod` 1e6 `div` 1000)
+    updatePosition layout cursor seat (fromIntegral $ eventPointerMotionTime event)
 
 handleCursorMotionAbs :: Ptr WlrOutputLayout -> Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerAbsMotion -> LayoutCache ()
 handleCursorMotionAbs layout cursor seat event_ptr = do
@@ -119,7 +119,7 @@ handleCursorMotionAbs layout cursor seat event_ptr = do
         (Just $ eventPointerAbsMotionDevice event)
         (eventPointerAbsMotionX event / eventPointerAbsMotionWidth event)
         (eventPointerAbsMotionY event / eventPointerAbsMotionHeight event)
-    updatePosition layout cursor seat (fromIntegral $ eventPointerAbsMotionTime event `mod` 1e6 `div` 1000)
+    updatePosition layout cursor seat (fromIntegral $ eventPointerAbsMotionTime event)
 
 handleCursorButton :: Ptr WlrOutputLayout -> Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerButton -> LayoutCache ()
 handleCursorButton layout cursor seat event_ptr = do
@@ -129,5 +129,5 @@ handleCursorButton layout cursor seat event_ptr = do
     case viewM of
         Nothing -> liftIO $ pointerClearFocus seat
         Just _ -> liftIO $ do
-            let time = (fromIntegral $ eventPointerButtonTime event `mod` 1e6 `div` 1000)
+            let time = (fromIntegral $ eventPointerButtonTime event)
             pointerNotifyButton seat time (eventPointerButtonButton event) (eventPointerButtonState event)
