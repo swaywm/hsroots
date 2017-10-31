@@ -1,9 +1,11 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Graphics.Wayland.WlRoots.OutputLayout
     ( WlrOutputLayout
     , createOutputLayout
     , destroyOutputLayout
 
     , WlrOutputLayoutOutput
+    , layoutOuputGetPosition
     , layoutGetOutput
     , layoutAtPos
 
@@ -32,6 +34,7 @@ import Foreign.Storable (Storable(peek, peekByteOff))
 import Data.Composition ((.:))
 
 import Graphics.Wayland.WlRoots.Output (Output)
+import Graphics.Wayland.WlRoots.Box (Point(..))
 import Graphics.Wayland.List (getListFromHead)
 
 data WlrOutputLayout
@@ -49,6 +52,12 @@ destroyOutputLayout = c_layout_destroy
 
 
 data WlrOutputLayoutOutput
+
+layoutOuputGetPosition :: Ptr WlrOutputLayoutOutput -> IO Point
+layoutOuputGetPosition ptr = do
+    x :: Double <- #{peek struct wlr_output_layout_output, x} ptr
+    y :: Double <- #{peek struct wlr_output_layout_output, y} ptr
+    pure $ Point (floor x) (floor y)
 
 foreign import ccall "wlr_output_layout_get" c_layout_get :: Ptr WlrOutputLayout -> Ptr Output -> IO (Ptr WlrOutputLayoutOutput)
 

@@ -11,6 +11,7 @@ module View
     , activateView
     , renderViewAdditional
     , getViewEventSurface
+    , setViewBox
     )
 where
 
@@ -32,12 +33,17 @@ class ShellSurface a where
     getEventSurface :: MonadIO m => a -> Double -> Double -> m (Ptr WlrSurface, Double, Double)
     setPosition :: MonadIO m => a -> Double -> Double -> m ()
     setPosition _ _ _ = pure ()
+    getID :: a -> Int
 
 data View = forall a. ShellSurface a => View
     { viewX :: IORef Double
     , viewY :: IORef Double
     , viewSurface :: a
     }
+
+instance Eq View where
+    (View _ _ left) == (View _ _ right) =
+        getID left == getID right
 
 getViewBox :: MonadIO m => View -> m WlrBox
 getViewBox (View xref yref surf) = do
@@ -50,6 +56,11 @@ getViewBox (View xref yref surf) = do
         , boxWidth  = floor width
         , boxHeight = floor height
         }
+
+setViewBox :: MonadIO m => View -> WlrBox -> m ()
+setViewBox v box = do
+    moveView v (fromIntegral $ boxX box) (fromIntegral $ boxY box)
+    resizeView v (fromIntegral $ boxWidth box) (fromIntegral $ boxHeight box)
 
 createView :: (ShellSurface a, MonadIO m) => a -> m View
 createView surf = do

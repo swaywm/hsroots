@@ -46,7 +46,7 @@ handleInputAdd cursor dsp backend seat ptr = do
         (DevicePointer pptr) -> handlePointer cursor ptr pptr
         _ -> pure ()
 
-inputCreate :: DisplayServer -> Ptr WlrOutputLayout -> Ptr Backend -> WayState Input
+inputCreate :: DisplayServer -> Ptr WlrOutputLayout -> Ptr Backend -> LayoutCache Input
 inputCreate display layout backend = do
     theme   <- liftIO $ loadCursorTheme "default" 16
     xcursor <- liftIO $ getCursor theme "left_ptr"

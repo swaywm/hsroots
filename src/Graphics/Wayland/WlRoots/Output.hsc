@@ -1,5 +1,6 @@
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Graphics.Wayland.WlRoots.Output
     ( Output
     , outputEnable
@@ -24,6 +25,8 @@ module Graphics.Wayland.WlRoots.Output
 
     , transformOutput
     , setCursor
+
+    , getOutputBox
     )
 where
 
@@ -39,6 +42,7 @@ import Foreign.C.Types (CInt(..))
 
 import Graphics.Wayland.WlRoots.Util.List (WlrList(..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
+import Graphics.Wayland.WlRoots.Box (WlrBox(..))
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Server (OutputTransform(..))
 
@@ -159,3 +163,9 @@ foreign import ccall "wlr_output_set_cursor" c_set_cursor :: Ptr Output -> Ptr (
 setCursor :: Ptr Output -> Ptr () -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
 setCursor output buffer strice width height hotspot_x hotspot_y =
     throwErrnoIf_ not "setCursor" $ c_set_cursor output buffer strice width height hotspot_x hotspot_y
+
+getOutputBox :: Ptr Output -> IO WlrBox
+getOutputBox ptr = do
+    width :: Word32 <- #{peek struct wlr_output, width} ptr
+    height :: Word32 <- #{peek struct wlr_output, height} ptr
+    pure $ WlrBox 0 0 (fromIntegral width) (fromIntegral height)

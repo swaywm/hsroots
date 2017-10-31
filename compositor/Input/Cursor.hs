@@ -1,14 +1,16 @@
 {-# LANGUAGE NumDecimals #-}
+{-# LANGUAGE TupleSections #-}
 module Input.Cursor
 where
 
+import View (View)
 import System.IO
 import View (getViewEventSurface)
 import Data.Word (Word32)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Waymonad
-import Foreign.Ptr (Ptr)
+import Foreign.Ptr (Ptr, ptrToIntPtr)
 import Foreign.Storable (Storable(..))
 import Graphics.Wayland.WlRoots.Box
 import Graphics.Wayland.WlRoots.Input.Pointer
@@ -29,7 +31,12 @@ import Graphics.Wayland.WlRoots.Cursor
     , getCursorX
     , getCursorY
     )
-import Graphics.Wayland.WlRoots.OutputLayout (WlrOutputLayout)
+import Graphics.Wayland.WlRoots.OutputLayout
+    ( WlrOutputLayout
+    , layoutAtPos
+    , layoutGetOutput
+    , layoutOuputGetPosition
+    )
 import Graphics.Wayland.Signal
     ( addListener
     , WlListener (..)
@@ -42,7 +49,10 @@ data Cursor = Cursor
     , cursorTokens :: [ListenerToken]
     }
 
-cursorCreate :: Ptr WlrOutputLayout -> Ptr WlrSeat -> WayState Cursor
+ptrToInt :: Num b => Ptr a -> b
+ptrToInt = fromIntegral . ptrToIntPtr
+
+cursorCreate :: Ptr WlrOutputLayout -> Ptr WlrSeat -> LayoutCache Cursor
 cursorCreate layout seat = do
     cursor <- liftIO $ createCursor
     stateRef <- ask
@@ -50,33 +60,47 @@ cursorCreate layout seat = do
     liftIO $ mapToRegion cursor Nothing
 
     let signal = cursorGetEvents cursor
-    tokb <- liftIO $ addListener (WlListener $ \evt -> runWayState (handleCursorButton cursor seat evt) stateRef) $ cursorButton signal
-    tokm <- liftIO $ addListener (WlListener $ \evt -> runWayState (handleCursorMotion cursor seat evt)    stateRef)$ cursorMotion signal
-    toka <- liftIO $ addListener (WlListener $ \evt -> runWayState (handleCursorMotionAbs cursor seat evt) stateRef)$ cursorMotionAbs signal
+    tokb <- liftIO $ addListener (WlListener $ \evt -> runLayoutCache (handleCursorButton layout cursor seat evt) stateRef) $ cursorButton signal
+    tokm <- liftIO $ addListener (WlListener $ \evt -> runLayoutCache (handleCursorMotion layout cursor seat evt)    stateRef)$ cursorMotion signal
+    toka <- liftIO $ addListener (WlListener $ \evt -> runLayoutCache (handleCursorMotionAbs layout cursor seat evt) stateRef)$ cursorMotionAbs signal
 
     pure Cursor
         { cursorRoots = cursor
         , cursorTokens = [tokb, tokm, toka]
         }
 
-updatePosition :: Ptr WlrCursor -> Ptr WlrSeat -> Word32 -> WayState ()
-updatePosition cursor seat time = do
-    baseX <- liftIO $ getCursorX cursor
-    baseY <- liftIO $ getCursorY cursor
+getCursorView :: Ptr WlrOutputLayout -> Ptr WlrCursor -> LayoutCache (Maybe (View, Double, Double))
+getCursorView layout cursor = do
+    baseX <- liftIO  $ getCursorX cursor
+    baseY <- liftIO  $ getCursorY cursor
 
-    viewM <- viewBelow $ Point (floor baseX) (floor baseY)
+    outputM <- liftIO $ layoutAtPos layout baseX baseY
+    case outputM of
+        Nothing -> pure Nothing
+        Just out -> do
+            lout <- liftIO $ layoutGetOutput layout out
+            (Point offX offY) <- liftIO $ layoutOuputGetPosition lout
+            let x = floor baseX - offX
+            let y = floor baseY - offY
+            let index = ptrToInt out
+            viewM <- viewBelow (Point x y) index
+            pure $ (,fromIntegral x,fromIntegral y) <$> viewM
+
+updatePosition :: Ptr WlrOutputLayout -> Ptr WlrCursor -> Ptr WlrSeat -> Word32 -> LayoutCache ()
+updatePosition layout cursor seat time = do
+    viewM <- getCursorView layout cursor
 
     case viewM of
         Nothing -> liftIO $ pointerClearFocus seat
-        Just view -> liftIO $ do
+        Just (view, baseX, baseY) -> liftIO $ do
             (surf, x, y) <- getViewEventSurface view baseX baseY
             pointerNotifyEnter seat surf x y
             pointerNotifyMotion seat time x y
             keyboardNotifyEnter seat surf
 
 
-handleCursorMotion :: Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerMotion -> WayState ()
-handleCursorMotion cursor seat event_ptr = do
+handleCursorMotion :: Ptr WlrOutputLayout -> Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerMotion -> LayoutCache ()
+handleCursorMotion layout cursor seat event_ptr = do
     event <- liftIO $ peek event_ptr
 
     liftIO $ moveCursor
@@ -84,10 +108,10 @@ handleCursorMotion cursor seat event_ptr = do
         (Just $ eventPointerMotionDevice event)
         (eventPointerMotionDeltaX event)
         (eventPointerMotionDeltaY event)
-    updatePosition cursor seat (fromIntegral $ eventPointerMotionTime event `mod` 1e6 `div` 1000)
+    updatePosition layout cursor seat (fromIntegral $ eventPointerMotionTime event `mod` 1e6 `div` 1000)
 
-handleCursorMotionAbs :: Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerAbsMotion -> WayState ()
-handleCursorMotionAbs cursor seat event_ptr = do
+handleCursorMotionAbs :: Ptr WlrOutputLayout -> Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerAbsMotion -> LayoutCache ()
+handleCursorMotionAbs layout cursor seat event_ptr = do
     event <- liftIO $ peek event_ptr
 
     liftIO $ warpCursorAbs
@@ -95,15 +119,12 @@ handleCursorMotionAbs cursor seat event_ptr = do
         (Just $ eventPointerAbsMotionDevice event)
         (eventPointerAbsMotionX event / eventPointerAbsMotionWidth event)
         (eventPointerAbsMotionY event / eventPointerAbsMotionHeight event)
-    updatePosition cursor seat (fromIntegral $ eventPointerAbsMotionTime event `mod` 1e6 `div` 1000)
+    updatePosition layout cursor seat (fromIntegral $ eventPointerAbsMotionTime event `mod` 1e6 `div` 1000)
 
-handleCursorButton :: Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerButton -> WayState ()
-handleCursorButton cursor seat event_ptr = do
-    x <- liftIO $ getCursorX cursor
-    y <- liftIO $ getCursorY cursor
+handleCursorButton :: Ptr WlrOutputLayout -> Ptr WlrCursor -> Ptr WlrSeat -> Ptr WlrEventPointerButton -> LayoutCache ()
+handleCursorButton layout cursor seat event_ptr = do
     event <- liftIO $ peek event_ptr
-
-    viewM <- viewBelow $ Point (floor x) (floor y)
+    viewM <- getCursorView layout cursor
 
     case viewM of
         Nothing -> liftIO $ pointerClearFocus seat

@@ -1,8 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
 module Main
 where
 
+import Data.Maybe (fromMaybe)
 import System.IO
+import Data.Text (Text)
 import Foreign.Storable (Storable(peek))
 import XdgShell
     ( XdgShell
@@ -13,16 +17,17 @@ import XWayland
     , xwayShellCreate
     )
 
-
+import Data.Text (Text)
 import Control.Monad.IO.Class (MonadIO)
 import Waymonad
 import Shared
 import View
+import ViewSet
 
 import Control.Monad.IO.Class (liftIO)
 import Input (Input(..), inputCreate)
-import Foreign.Ptr (Ptr, ptrToIntPtr)
-import Data.IORef (newIORef, IORef, writeIORef, readIORef)
+import Foreign.Ptr (Ptr, ptrToIntPtr, intPtrToPtr)
+import Data.IORef (newIORef, IORef, writeIORef, readIORef, modifyIORef)
 
 import Graphics.Wayland.Resource (resourceDestroy)
 import Graphics.Wayland.WlRoots.Render.Matrix (withMatrix, matrixTranslate)
@@ -60,6 +65,7 @@ import Graphics.Wayland.WlRoots.Output
     , swapOutputBuffers
     , getTransMatrix
     , setCursor
+    , getOutputBox
     )
 import Graphics.Wayland.WlRoots.Surface
     ( surfaceGetTexture
@@ -82,7 +88,10 @@ import Graphics.Wayland.Server
 import Control.Exception (bracket_)
 import Control.Monad (void, when, forM_)
 
-import qualified Data.IntMap.Strict as M
+import Data.Map (Map)
+
+import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
 
 data Compositor = Compositor
     { compDisplay :: DisplayServer
@@ -97,7 +106,8 @@ data Compositor = Compositor
     , compInput :: Input
     }
 
-
+intToPtr :: Integral a => a -> Ptr b
+intToPtr = intPtrToPtr . fromIntegral
 
 ptrToInt :: Num b => Ptr a -> b
 ptrToInt = fromIntegral . ptrToIntPtr
@@ -140,72 +150,87 @@ outputHandleView comp secs output view = do
     renderViewAdditional (outputHandleSurface comp secs output) view
 
 
-frameHandler :: IORef Compositor -> Double -> Ptr Output -> WayState ()
+frameHandler :: IORef Compositor -> Double -> Ptr Output -> LayoutCache ()
 frameHandler compRef secs output = do
-    -- First build the list of surface we can draw
     views <- get
-    liftIO $ do
-        comp <- readIORef compRef
-        renderOn output (compRenderer comp) $ do
-            mapM_ (outputHandleView comp secs output) views
+    let viewsM = IM.lookup (ptrToInt output) views
+    case viewsM of
+        Nothing -> pure ()
+        Just views -> liftIO $ do
+            comp <- readIORef compRef
+            renderOn output (compRenderer comp) $ do
+                mapM_ (outputHandleView comp secs output . fst) views
 
-adjustPosition :: MonadIO m => [View] -> WlrBox -> Bool -> m ()
-adjustPosition [] _ _ = pure ()
-adjustPosition [v] box _ = do
-    let x = fromIntegral $ boxX box
-    let y = fromIntegral $ boxY box
-    moveView v x y
+whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
+whenJust Nothing _ = pure ()
+whenJust (Just x) f = f x
 
-    let width = fromIntegral $ boxWidth box
-    let height = fromIntegral $ boxHeight box
-    resizeView v width height
-adjustPosition (v:vs) box True = do
-    let x = fromIntegral $ boxX box
-    let y = fromIntegral $ boxY box
-    moveView v x y
+reLayout :: Ord a => LayoutCacheRef -> a -> [(a, Int)] -> WayState a ()
+reLayout cacheRef ws xs = do
+    wstate <- M.lookup ws <$> get
 
-    let width = fromIntegral $ boxWidth box `div` 2
-    let height = fromIntegral $ boxHeight box
-    resizeView v width height
-    adjustPosition vs box { boxX = floor x + floor width, boxWidth = floor width } False
-adjustPosition (v:vs) box False = do
-    let x = fromIntegral $ boxX box
-    let y = fromIntegral $ boxY box
-    moveView v x y
+    liftIO $ whenJust (M.lookup ws $ M.fromList xs) $ \out -> whenJust wstate $ \case
+        (Workspace _ Nothing) -> modifyIORef cacheRef $ IM.delete out
+        (Workspace (Layout l) (Just vs)) -> do
+            box <- getOutputBox $ intToPtr out
+            let layout = pureLayout l box vs
+            modifyIORef cacheRef $ IM.insert out layout
 
-    let width = fromIntegral $ boxWidth box
-    let height = fromIntegral $ boxHeight box `div` 2
-    resizeView v width height
-    adjustPosition vs box { boxY = floor y + floor height, boxHeight = floor height } True
+            mapM_ (uncurry setViewBox) layout
 
-reLayout :: WayState ()
-reLayout = do
-    views <- get
-    adjustPosition (M.elems views) (WlrBox 0 0 1300 700) True
+insertView
+    :: Ord a
+    => LayoutCacheRef
+    -> IORef a
+    -> IORef [(a, Int)]
+    -> View
+    -> WayState a ()
+insertView cacheRef currentWS wsMapping view = do
+    mapping <- liftIO $ readIORef wsMapping
+    ws <- liftIO $ readIORef currentWS
+
+    modify $ M.adjust (addView view) ws
+    reLayout cacheRef ws mapping
+
+removeView
+    :: (Ord a, Show a)
+    => LayoutCacheRef
+    -> IORef [(a, Int)]
+    -> View
+    -> WayState a ()
+removeView cacheRef wsMapping view = do
+    mapping <- liftIO $ readIORef wsMapping
+    wsL <- filter (fromMaybe False . fmap (contains view) . wsViews . snd) . M.toList <$> get
+
+    case wsL of
+        [(ws, _)] -> do
+            modify $ M.adjust (rmView view) ws
+            reLayout cacheRef ws mapping
+        xs -> liftIO $ do
+            hPutStrLn stderr "Found a view in a number of workspaces that's not 1!"
+            hPutStrLn stderr $ show $ map fst xs
 
 
-removeView :: Int -> WayState ()
-removeView key = do
-    modify $ M.delete key
-    reLayout
-
-addView ::  Int -> View -> WayState ()
-addView key value = do
-    modify $ M.insert key value
-    reLayout
-
-
-makeCompositor :: DisplayServer -> Ptr Backend -> WayState Compositor
-makeCompositor display backend = do
+makeCompositor
+    :: (Ord a, Show a)
+    => DisplayServer
+    -> Ptr Backend
+    -> LayoutCacheRef
+    -> IORef [(a, Int)]
+    -> IORef a
+    -> WayState a Compositor
+makeCompositor display backend ref mappings currentWS = do
+    let addFun = insertView ref currentWS mappings
+    let delFun = removeView ref mappings
     renderer <- liftIO $ rendererCreate backend
     void $ liftIO $ displayInitShm display
     comp <- liftIO $ compositorCreate display renderer
---    shell <- liftIO $ shellCreate display
-    xdgShell <- xdgShellCreate display addView removeView
     devManager <- liftIO $ managerCreate display
-    xway <- xwayShellCreate display comp addView removeView
+--    shell <- liftIO $ shellCreate display
+    xdgShell <- xdgShellCreate display   addFun delFun
+    xway <- xwayShellCreate display comp addFun delFun
     layout <- liftIO $ createOutputLayout
-    input <- inputCreate display layout backend
+    input <- runLayoutCache (inputCreate display layout backend) ref
     pure $ Compositor
         { compDisplay = display
         , compRenderer = renderer
@@ -233,27 +258,39 @@ setCursorImage output xcursor = do
         (xCursorImageHotspotX image)
         (xCursorImageHotspotY image)
 
-handleOutputAdd :: IORef Compositor -> WayStateRef -> Ptr Output -> IO FrameHandler
-handleOutputAdd ref stateRef output = do
+handleOutputAdd
+    :: IORef Compositor
+    -> LayoutCacheRef
+    -> IORef [(Text, Int)]
+    -> Ptr Output 
+    -> IO FrameHandler
+handleOutputAdd ref stateRef mapRef output = do
+    writeIORef mapRef [("1", ptrToInt output)]
     comp <- readIORef ref
 
     setCursorImage output (inputXCursor $ compInput comp)
     addOutputAuto (compLayout comp) output
 
     pure $ \secs out ->
-        runWayState (frameHandler ref secs out) stateRef
+        runLayoutCache (frameHandler ref secs out) stateRef
+
+defaultMap :: Map Text Workspace
+defaultMap = M.fromList [("1", Workspace (Layout Full) Nothing)]
 
 realMain :: IO ()
 realMain = do
-    stateRef <- newIORef mempty
+    stateRef :: WayStateRef Text  <- newIORef defaultMap
+    layoutRef <- newIORef mempty
     dpRef <- newIORef undefined
     compRef <- newIORef undefined
+    mapRef <- newIORef []
+    currentRef <- newIORef "1"
     launchCompositor ignoreHooks
         { displayHook = writeIORef dpRef
         , backendPreHook = \backend -> do
             dsp <- readIORef dpRef
-            writeIORef compRef =<< runWayState (makeCompositor dsp backend) stateRef
-        , outputAddHook = handleOutputAdd compRef stateRef
+            writeIORef compRef =<< runWayState (makeCompositor dsp backend layoutRef mapRef currentRef) stateRef
+          , outputAddHook = handleOutputAdd compRef layoutRef mapRef
         }
     pure ()
 

@@ -7,6 +7,7 @@ where
 
 import Foreign.Ptr (Ptr, ptrToIntPtr)
 
+import Data.Maybe (fromJust)
 import Foreign.Storable (Storable(..))
 import qualified Graphics.Wayland.WlRoots.XWayland as X
 import Graphics.Wayland.WlRoots.Compositor (WlrCompositor)
@@ -36,7 +37,7 @@ data XWaySurface = XWaySurface
 ptrToInt :: Num b => Ptr a -> b
 ptrToInt = fromIntegral . ptrToIntPtr
 
-type MapRef =  IORef (IntMap XWaySurface)
+type MapRef =  IORef (IntMap View)
 
 data XWayShell = XWayShell
     { xwaySurfaceRef :: MapRef
@@ -44,7 +45,7 @@ data XWayShell = XWayShell
     }
 
 
-xwayShellCreate :: DisplayServer -> Ptr WlrCompositor -> (Int -> View -> WayState ()) -> (Int -> WayState ()) -> WayState XWayShell
+xwayShellCreate :: DisplayServer -> Ptr WlrCompositor -> (View -> WayState a ()) -> (View -> WayState a ()) -> WayState a XWayShell
 xwayShellCreate display comp addFun delFun = do
     surfaces <- liftIO $ newIORef mempty
     stateRef <- ask
@@ -55,20 +56,21 @@ xwayShellCreate display comp addFun delFun = do
         , xwayWlrootsShell = roots
         }
 
-handleXwayDestroy :: WayStateRef -> MapRef -> (Int -> WayState ()) -> Ptr X.X11Surface -> IO ()
+handleXwayDestroy :: WayStateRef a -> MapRef -> (View -> WayState a ()) -> Ptr X.X11Surface -> IO ()
 handleXwayDestroy stateRef ref delFun surf = do
+    view <- fromJust . M.lookup (ptrToInt surf) <$> readIORef ref
     modifyIORef ref $ M.delete (ptrToInt surf)
-    runWayState (delFun (ptrToInt surf)) stateRef
+    runWayState (delFun view) stateRef
 
     sptr :: Ptr () <- peek (X.getX11SurfaceDataPtr surf)
     freeStablePtr $ castPtrToStablePtr sptr
 
-handleXwaySurface :: Ptr X.XWayland -> WayStateRef -> MapRef -> (Int -> View -> WayState ()) -> (Int -> WayState ()) -> Ptr X.X11Surface -> IO ()
+handleXwaySurface :: Ptr X.XWayland -> WayStateRef a -> MapRef -> (View -> WayState a ()) -> (View -> WayState a ()) -> Ptr X.X11Surface -> IO ()
 handleXwaySurface xway stateRef ref addFun delFun surf = do
     let xwaySurf = XWaySurface xway surf
-    modifyIORef ref $ M.insert (ptrToInt surf) xwaySurf
     view <- createView xwaySurf
-    runWayState (addFun (ptrToInt surf) view) stateRef
+    modifyIORef ref $ M.insert (ptrToInt surf) view
+    runWayState (addFun view) stateRef
     activate xwaySurf True
 
     let signals = X.getX11SurfaceEvents surf
@@ -95,3 +97,4 @@ instance ShellSurface XWaySurface where
     setPosition (XWaySurface _ surf) x y =
         let point = Point (floor x) (floor y)
          in liftIO $ X.setX11SurfacePosition surf point
+    getID (XWaySurface _ surf) = ptrToInt surf

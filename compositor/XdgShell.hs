@@ -1,8 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
 module XdgShell
-    ( getXdgSurfaces
-    , xdgShellCreate
+    ( xdgShellCreate
     , XdgShell
     )
 where
@@ -13,6 +12,7 @@ import Waymonad
 import Control.Monad (when, filterM, forM_)
 import Control.Monad.IO.Class
 import Control.Monad.Reader (ask)
+import Data.Maybe (fromJust)
 import Data.Composition ((.:))
 
 import Graphics.Wayland.WlRoots.Box (WlrBox (..))
@@ -37,14 +37,14 @@ ptrToInt = fromIntegral . ptrToIntPtr
 
 newtype XdgSurface = XdgSurface { unXdg :: (Ptr R.WlrXdgSurface) }
 
-type MapRef =  IORef (IntMap XdgSurface)
+type MapRef =  IORef (IntMap View)
 
 data XdgShell = XdgShell
     { xdgSurfaceRef :: MapRef
     , xdgWlrootsShell :: Ptr R.WlrXdgShell
     }
 
-xdgShellCreate :: DisplayServer -> (Int -> View -> WayState ()) -> (Int -> WayState ()) -> WayState XdgShell
+xdgShellCreate :: DisplayServer -> (View -> WayState a ()) -> (View -> WayState a ()) -> WayState a XdgShell
 xdgShellCreate display addFun delFun = do
     surfaces <- liftIO $ newIORef mempty
     stateRef <- ask
@@ -54,23 +54,24 @@ xdgShellCreate display addFun delFun = do
         , xdgWlrootsShell = roots
         }
 
-handleXdgDestroy :: WayStateRef -> MapRef -> (Int -> WayState ()) -> Ptr R.WlrXdgSurface -> IO ()
+handleXdgDestroy :: WayStateRef a -> MapRef -> (View -> WayState a ()) -> Ptr R.WlrXdgSurface -> IO ()
 handleXdgDestroy stateRef ref delFun surf = do
+    view <- fromJust . M.lookup (ptrToInt surf) <$> readIORef ref
     modifyIORef ref $ M.delete (ptrToInt surf)
-    runWayState (delFun (ptrToInt surf)) stateRef
+    runWayState (delFun view) stateRef
 
     sptr :: Ptr () <- peek (R.getXdgSurfaceDataPtr surf)
     freeStablePtr $ castPtrToStablePtr sptr
 
 
-handleXdgSurface :: WayStateRef -> MapRef -> (Int -> View -> WayState ()) -> (Int -> WayState ()) -> Ptr R.WlrXdgSurface -> IO ()
+handleXdgSurface :: WayStateRef a -> MapRef -> (View -> WayState a ()) -> (View -> WayState a ()) -> Ptr R.WlrXdgSurface -> IO ()
 handleXdgSurface stateRef ref addFun delFun surf = do
     isPopup <- R.isXdgPopup surf
     when (not isPopup) $ do
         let xdgSurf = XdgSurface surf
-        modifyIORef ref $ M.insert (ptrToInt surf) xdgSurf
         view <- createView xdgSurf
-        runWayState (addFun (ptrToInt surf) view) stateRef
+        modifyIORef ref $ M.insert (ptrToInt surf) view
+        runWayState (addFun view) stateRef
         activate xdgSurf True
         R.setMaximized surf True
 
@@ -79,9 +80,6 @@ handleXdgSurface stateRef ref addFun delFun surf = do
         sptr <- newStablePtr handler
         poke (R.getXdgSurfaceDataPtr surf) (castStablePtrToPtr sptr)
 
-
-getXdgSurfaces :: XdgShell -> IO [Ptr R.WlrXdgSurface]
-getXdgSurfaces = fmap (fmap unXdg . M.elems) . readIORef . xdgSurfaceRef
 
 renderPopups :: MonadIO m => (Ptr WlrSurface -> Int -> Int -> m ()) -> Ptr R.WlrXdgSurface -> Int -> Int -> m ()
 renderPopups fun surf baseX baseY = do
@@ -126,5 +124,5 @@ instance ShellSurface XdgSurface where
             Just (popup, newx, newy) -> do
                 realS <- R.xdgSurfaceGetSurface popup
                 pure (realS, x - newx, y - newy)
-
+    getID (XdgSurface surf) = ptrToInt surf
 
