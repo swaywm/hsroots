@@ -23,3 +23,13 @@ I mainly created this to support [my own endavours](https://github.com/Ongy/waym
 This implies that I will somewhat selectivly add to this as I need it in any project based on this.
 
 Should you be interested in using this and feel like there's a feature missing, I will always appreciate PRs, and will aim to implemented feature requests in a timely manner.
+
+### Build instructions
+
+* Install `wlroots` with the instructions provided in their Readme
+* `git clone --recursive https://github.com/swaywm/hsroots`
+* `cd hsroots`
+* `cabal new-build`
+
+This should download all dependencies needed for hsroots and build it together
+with the examples provided in this repository.
