@@ -55,9 +55,9 @@ data WlrOutputLayoutOutput
 
 layoutOuputGetPosition :: Ptr WlrOutputLayoutOutput -> IO Point
 layoutOuputGetPosition ptr = do
-    x :: Double <- #{peek struct wlr_output_layout_output, x} ptr
-    y :: Double <- #{peek struct wlr_output_layout_output, y} ptr
-    pure $ Point (floor x) (floor y)
+    x :: CInt <- #{peek struct wlr_output_layout_output, x} ptr
+    y :: CInt <- #{peek struct wlr_output_layout_output, y} ptr
+    pure $ Point (fromIntegral x) (fromIntegral y)
 
 foreign import ccall "wlr_output_layout_get" c_layout_get :: Ptr WlrOutputLayout -> Ptr Output -> IO (Ptr WlrOutputLayoutOutput)
 
