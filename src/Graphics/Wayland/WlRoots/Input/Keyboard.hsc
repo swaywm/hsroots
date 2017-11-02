@@ -16,14 +16,23 @@ module Graphics.Wayland.WlRoots.Input.Keyboard
 
     , KeyboardModifiers (..)
     , readModifiers
+
+    , WlrModifier (..)
+    , getModifiers
+    , modifierToNum
+    , modifiersToField
+
+    , modifierInField
+    , fieldToModifiers
     )
 where
 
 #include <wlr/types/wlr_keyboard.h>
 
+import Data.Bits ((.&.), (.|.), Bits)
 import Foreign.C.Types (CInt(..))
 import Foreign.Storable (Storable(..))
-import Data.Word (Word32, Word64)
+import Data.Word (Word32)
 import Foreign.Ptr (Ptr, plusPtr)
 
 import Graphics.Wayland.Signal (WlSignal)
@@ -98,3 +107,46 @@ readModifiers ptr = Modifiers
     <*> #{peek struct wlr_keyboard, modifiers.latched} ptr
     <*> #{peek struct wlr_keyboard, modifiers.locked} ptr
     <*> #{peek struct wlr_keyboard, modifiers.group} ptr
+
+foreign import ccall unsafe "wlr_keyboard_get_modifiers" c_get_modifiers :: Ptr WlrKeyboard -> IO Word32
+
+getModifiers :: Ptr WlrKeyboard -> IO Word32
+getModifiers = c_get_modifiers
+
+data WlrModifier
+    = Shift
+    | Caps
+    | Ctrl
+    | Alt
+    | Mod2
+    | Mod3
+    | Logo
+    | Mod5
+    deriving (Show, Eq)
+
+modifierToNum :: Num a => WlrModifier -> a
+modifierToNum Shift = #{const WLR_MODIFIER_SHIFT}
+modifierToNum Caps  = #{const WLR_MODIFIER_CAPS}
+modifierToNum Ctrl  = #{const WLR_MODIFIER_CTRL}
+modifierToNum Alt   = #{const WLR_MODIFIER_ALT}
+modifierToNum Mod2  = #{const WLR_MODIFIER_MOD2}
+modifierToNum Mod3  = #{const WLR_MODIFIER_MOD3}
+modifierToNum Logo  = #{const WLR_MODIFIER_LOGO}
+modifierToNum Mod5  = #{const WLR_MODIFIER_MOD5}
+
+modifiersToField :: (Num a, Bits a, Foldable t) => t WlrModifier -> a
+modifiersToField = foldr ((.|.) . modifierToNum) 0
+
+modifierInField :: (Num a, Bits a) => WlrModifier -> a -> Bool
+modifierInField modifier field = modifierToNum modifier .&. field /= 0
+
+fieldToModifiers :: (Num a, Bits a) => a -> [WlrModifier]
+fieldToModifiers field =
+    foldr prependIf [] allMods
+    where   prependIf :: WlrModifier -> [WlrModifier] -> [WlrModifier]
+            prependIf modifier mods =
+                if modifierInField modifier field
+                    then (modifier:mods)
+                    else mods
+            allMods :: [WlrModifier]
+            allMods = [Shift, Caps, Ctrl, Alt, Mod2, Mod3, Logo, Mod5]
