@@ -21,21 +21,23 @@ module Graphics.Wayland.WlRoots.Cursor
 
     , CursorEvents (..)
     , cursorGetEvents
+    , setCursorImage
     )
 where
 
 #include <wlr/types/wlr_cursor.h>
 
-import Foreign.Storable (Storable(..))
+import Data.Word (Word32)
+import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Foreign.Ptr (Ptr, nullPtr, plusPtr)
-import Foreign.C.Error (throwErrnoIfNull)
-import Graphics.Wayland.WlRoots.XCursor (WlrXCursor)
+import Foreign.Storable (Storable(..))
+import Graphics.Wayland.Signal (WlSignal)
+import Graphics.Wayland.WlRoots.Box (WlrBox)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Pointer (WlrEventPointerButton, WlrEventPointerMotion, WlrEventPointerAbsMotion)
 import Graphics.Wayland.WlRoots.Output (Output)
 import Graphics.Wayland.WlRoots.OutputLayout (WlrOutputLayout)
-import Graphics.Wayland.WlRoots.Box (WlrBox)
-import Graphics.Wayland.Signal (WlSignal)
+import Graphics.Wayland.WlRoots.XCursor (WlrXCursor)
 
 data CursorEvents = CursorEvents
     { cursorButton :: Ptr (WlSignal WlrEventPointerButton)
@@ -73,7 +75,8 @@ destroyCursor = c_cursor_destroy
 foreign import ccall "wlr_cursor_set_xcursor" c_set_xcursor :: Ptr WlrCursor -> Ptr WlrXCursor -> IO ()
 
 setXCursor :: Ptr WlrCursor -> Ptr WlrXCursor -> IO ()
-setXCursor = c_set_xcursor
+setXCursor = \_ _ -> pure ()
+    --c_set_xcursor
 
 
 foreign import ccall "wlr_cursor_warp" c_cursor_warp :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> IO Bool
@@ -132,3 +135,14 @@ foreign import ccall "wlr_cursor_map_to_region" c_map_to_region :: Ptr WlrCursor
 mapToRegion :: Ptr WlrCursor -> Maybe (Ptr WlrBox) -> IO ()
 mapToRegion cursor Nothing = mapToRegion cursor (Just nullPtr)
 mapToRegion cursor (Just box) = c_map_to_region cursor box
+
+--void wlr_cursor_set_image(struct wlr_cursor *cur, const uint8_t *pixels,
+--    int32_t stride, uint32_t width, uint32_t height, int32_t hotspot_x,
+--    int32_t hotspot_y);
+
+foreign import ccall "wlr_cursor_set_image" c_set_cursor_image :: Ptr WlrCursor -> Ptr () -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO Bool
+
+
+setCursorImage :: Ptr WlrCursor -> Ptr () -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+setCursorImage cursor buffer stride width height hotspot_x hotspot_y =
+    throwErrnoIf_ not "setCursorImage" $ c_set_cursor_image cursor buffer stride width height hotspot_x hotspot_y

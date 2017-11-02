@@ -69,7 +69,7 @@ data WlrXCursorImage = WlrXCursorImage
     , xCursorImageDelay :: Word32
 
     , xCursorImageBuffer :: Ptr ()
-    }
+    } deriving (Eq, Show)
 
 instance Storable WlrXCursorImage where
     sizeOf _ = #{size struct wlr_xcursor_image}

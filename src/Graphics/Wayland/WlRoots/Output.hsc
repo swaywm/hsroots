@@ -10,7 +10,6 @@ module Graphics.Wayland.WlRoots.Output
 
     , effectiveResolution
     , destroyOutput
-    , moveCursor
 
     , OutputMode(..)
     , setOutputMode
@@ -24,7 +23,6 @@ module Graphics.Wayland.WlRoots.Output
     , getDataPtr
 
     , transformOutput
-    , setCursor
 
     , getOutputBox
     )
@@ -83,14 +81,6 @@ effectiveResolution output = alloca $ \width -> alloca $ \height -> do
     pure (fromIntegral width_val, fromIntegral height_val)
 
 
-foreign import ccall unsafe "wlr_output_move_cursor" c_move_cursor :: Ptr Output -> CInt -> CInt -> IO Bool
-
-moveCursor :: Ptr Output -> Int -> Int -> IO ()
-moveCursor ptr x y =
-    throwErrnoIf_ not "moveCursor" $ c_move_cursor ptr (fromIntegral x) (fromIntegral y)
-
---void wlr_output_transform(struct wlr_output *output,
---		enum wl_output_transform transform);
 foreign import ccall unsafe "wlr_output_transform" c_output_transform :: Ptr Output -> CInt -> IO ()
 
 transformOutput :: Ptr Output -> OutputTransform -> IO ()
@@ -156,12 +146,6 @@ getOutputSignals ptr =
 getDataPtr :: Ptr Output -> Ptr (Ptr a)
 getDataPtr = #{ptr struct wlr_output, data}
 
-
-foreign import ccall "wlr_output_set_cursor" c_set_cursor :: Ptr Output -> Ptr () -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO Bool
-
-setCursor :: Ptr Output -> Ptr () -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
-setCursor output buffer strice width height hotspot_x hotspot_y =
-    throwErrnoIf_ not "setCursor" $ c_set_cursor output buffer strice width height hotspot_x hotspot_y
 
 getOutputBox :: Ptr Output -> IO WlrBox
 getOutputBox ptr = do
