@@ -104,11 +104,7 @@ instance Storable OutputMode where
         <*> #{peek struct wlr_output_mode, width} ptr
         <*> #{peek struct wlr_output_mode, height} ptr
         <*> #{peek struct wlr_output_mode, refresh} ptr
-    poke ptr mode = do
-        #{poke struct wlr_output_mode, flags}   ptr $ modeFlags mode
-        #{poke struct wlr_output_mode, width}   ptr $ modeWidth mode
-        #{poke struct wlr_output_mode, height}  ptr $ modeHeight mode
-        #{poke struct wlr_output_mode, refresh} ptr $ modeRefresh mode
+    poke = error "We do not poke output modes"
 
 foreign import ccall unsafe "wlr_output_set_mode" c_set_mode :: Ptr Output -> Ptr OutputMode -> IO Bool
 
@@ -122,7 +118,7 @@ getName = peekCString . #{ptr struct wlr_output, name}
 
 getModes :: Ptr Output -> IO [Ptr OutputMode]
 getModes ptr = do
-    listptr <- #{peek struct wlr_output, modes} ptr
+    let listptr = #{ptr struct wlr_output, modes} ptr
     getListFromHead listptr #{offset struct wlr_output_mode, link}
 
 getTransMatrix :: Ptr Output -> Matrix
