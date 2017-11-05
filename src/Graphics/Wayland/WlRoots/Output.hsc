@@ -25,18 +25,21 @@ module Graphics.Wayland.WlRoots.Output
     , transformOutput
 
     , getOutputBox
+    , getOutputName
     )
 where
 
 #include <wlr/types/wlr_output.h>
 
-import Foreign.C.String (peekCString)
-import Foreign.Marshal.Alloc (alloca)
-import Foreign.Storable (Storable(..))
-import Foreign.Ptr (Ptr, plusPtr)
+import Data.ByteString.Unsafe (unsafePackCString)
+import Data.Text (Text)
 import Data.Word (Word32)
 import Foreign.C.Error (throwErrnoIf_)
+import Foreign.C.String (peekCString)
 import Foreign.C.Types (CInt(..))
+import Foreign.Marshal.Alloc (alloca)
+import Foreign.Ptr (Ptr, plusPtr)
+import Foreign.Storable (Storable(..))
 
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Box (WlrBox(..))
@@ -44,7 +47,12 @@ import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Server (OutputTransform(..))
 import Graphics.Wayland.List (getListFromHead)
 
+import qualified Data.Text.Encoding as E
+
 data Output
+
+getOutputName :: Ptr Output -> IO Text
+getOutputName = fmap E.decodeUtf8 . unsafePackCString . #{ptr struct wlr_output, name}
 
 foreign import ccall unsafe "wlr_output_enable" c_output_enable :: Ptr Output -> Bool -> IO ()
 
