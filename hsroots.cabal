@@ -86,7 +86,7 @@ library
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.7 && <5
+  build-depends:       base >=4.7 && <5,
                        composition >= 1.0.2 && < 1.1,
                        hayland, xkbcommon, bytestring, text
   
