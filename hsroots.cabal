@@ -86,9 +86,9 @@ library
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.9 && <4.10,
+  build-depends:       base >=4.7 && <5
                        composition >= 1.0.2 && < 1.1,
-                       hayland, xkbcommon
+                       hayland, xkbcommon, bytestring, text
   
   
   -- Directories containing source files.
@@ -159,43 +159,3 @@ executable pointer
   c-sources:           cbits/cat.c
   Include-dirs:        cbits
   PkgConfig-Depends:   glesv2
-
-
-executable compositor
-  -- .hs or .lhs file containing the Main module.
-  main-is:             Main.hs
-  hs-source-dirs:      compositor
-
-  -- Modules included in this executable, other than Main.
-  -- other-modules:
-
-  other-modules:        Shared
-  other-modules:        XdgShell
-  other-modules:        XWayland
-  other-modules:        View
-  other-modules:        Input
-  other-modules:        Input.Keyboard
-  other-modules:        Input.Pointer
-  other-modules:        Input.Cursor
-  other-modules:        Waymonad
-  other-modules:        ViewSet
-
-  -- LANGUAGE extensions used by modules in this package.
-  -- other-extensions:
-
-  -- Other library packages from which modules are imported.
-  build-depends:       base >=4.6.0.1 && <5, hsroots, hayland, clock
-  build-depends:       xkbcommon, containers, composition
-  build-depends:       unix, mtl, text
-
-  -- Directories containing source files.
-  -- hs-source-dirs:
-
-  -- Base language which the package is written in.
-  default-language:    Haskell2010
-
-  ghc-options:         -Wall -with-rtsopts=-V0
-  c-sources:           cbits/cat.c
-  Include-dirs:        cbits
-  PkgConfig-Depends:   glesv2
-
