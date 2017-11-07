@@ -10,6 +10,7 @@ module Graphics.Wayland.WlRoots.Input.Keyboard
     , EventKey (..)
 
     , getKeystate
+    , getKeymap
 
     , setKeymap
     , keyStateToInt
@@ -93,6 +94,10 @@ setKeymap = c_set_keymap
 
 getKeystate :: Ptr WlrKeyboard -> IO (Ptr CKeyboardState)
 getKeystate = #{peek struct wlr_keyboard, xkb_state}
+
+getKeymap :: Ptr WlrKeyboard -> IO (Ptr CKeymap)
+getKeymap = #{peek struct wlr_keyboard, keymap}
+
 
 data KeyboardModifiers = Modifiers
     { modDepressed :: Word32
