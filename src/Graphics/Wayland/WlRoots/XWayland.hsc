@@ -18,6 +18,8 @@ module Graphics.Wayland.WlRoots.XWayland
     , getX11SurfacePosition
     , setX11SurfacePosition
     , getX11SurfaceGeometry
+
+    , x11SurfaceOverrideRedirect
     )
 where
 
@@ -114,3 +116,7 @@ getX11SurfaceGeometry surf = do
     width :: Word16 <- #{peek struct wlr_xwayland_surface, width} surf
     height :: Word16 <- #{peek struct wlr_xwayland_surface, height} surf
     pure $ WlrBox x y (fromIntegral width) (fromIntegral height)
+
+
+x11SurfaceOverrideRedirect :: Ptr X11Surface -> IO Bool
+x11SurfaceOverrideRedirect = #{peek struct wlr_xwayland_surface, override_redirect}
