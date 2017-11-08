@@ -3,6 +3,7 @@ module Graphics.Wayland.WlRoots.Box
     , Point (..)
 
     , boxContainsPoint
+    , centerBox
     )
 where
 
@@ -43,3 +44,12 @@ instance Storable WlrBox where
         #{poke struct wlr_box, y} ptr . toCInt $ boxY box
         #{poke struct wlr_box, width} ptr . toCInt $ boxWidth box
         #{poke struct wlr_box, height} ptr . toCInt $ boxHeight box
+
+-- | Center the second argument in the first
+-- This doesn't produce an error, but weird results when the box to be centered
+-- is bigger than the box to center in!
+centerBox :: WlrBox -> WlrBox -> WlrBox
+centerBox (WlrBox x y outerW outerH) (WlrBox _ _ innerW innerH) =
+    let offX = (outerW - innerW) `div` 2
+        offY = (outerH - innerH) `div` 2
+     in WlrBox (x + offX) (y + offY) innerW innerH
