@@ -23,6 +23,8 @@ module Graphics.Wayland.WlRoots.Surface
     , subSurfaceGetSurface
     , surfaceGetSubs
     , subSurfaceGetBox
+
+    , getSurfaceResource
     )
 where
 
@@ -49,6 +51,8 @@ foreign import ccall unsafe "wlr_surface_create" c_create :: Ptr WlResource -> P
 createSurface :: Ptr WlResource -> Ptr Renderer -> IO (Ptr WlrSurface)
 createSurface = throwErrnoIfNull "createSurface" .: c_create
 
+getSurfaceResource :: Ptr WlrSurface -> IO (Ptr WlResource)
+getSurfaceResource = #{peek struct wlr_surface, resource}
 
 foreign import ccall unsafe "wlr_surface_get_matrix" c_get_matrix :: Ptr WlrSurface -> Ptr CFloat -> Ptr CFloat -> Ptr CFloat -> IO ()
 
