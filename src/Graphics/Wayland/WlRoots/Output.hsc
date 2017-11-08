@@ -153,6 +153,8 @@ getDataPtr = #{ptr struct wlr_output, data}
 
 getOutputBox :: Ptr Output -> IO WlrBox
 getOutputBox ptr = do
+    x :: Word32 <- #{peek struct wlr_output, lx} ptr
+    y :: Word32 <- #{peek struct wlr_output, ly} ptr
     width :: Word32 <- #{peek struct wlr_output, width} ptr
     height :: Word32 <- #{peek struct wlr_output, height} ptr
-    pure $ WlrBox 0 0 (fromIntegral width) (fromIntegral height)
+    pure $ WlrBox (fromIntegral x) (fromIntegral y) (fromIntegral width) (fromIntegral height)
