@@ -25,9 +25,11 @@ where
 
 #include <wlr/xwayland.h>
 
+
 import System.IO
 import Data.Word (Word16, Word32)
 import Data.Int (Int16)
+import Data.Word (Word8)
 import Foreign.Storable (Storable(..))
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.StablePtr
@@ -119,4 +121,6 @@ getX11SurfaceGeometry surf = do
 
 
 x11SurfaceOverrideRedirect :: Ptr X11Surface -> IO Bool
-x11SurfaceOverrideRedirect = #{peek struct wlr_xwayland_surface, override_redirect}
+x11SurfaceOverrideRedirect ptr = do
+    val :: Word8 <- #{peek struct wlr_xwayland_surface, override_redirect} ptr
+    pure $ val /= 0
