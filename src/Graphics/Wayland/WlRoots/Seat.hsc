@@ -16,6 +16,8 @@ module Graphics.Wayland.WlRoots.Seat
     , keyboardNotifyKey
     , keyboardNotifyModifiers
     , seatSetKeyboard
+
+    , keyboardClearFocus
     )
 where
 
@@ -110,3 +112,8 @@ foreign import ccall unsafe "wlr_seat_set_keyboard" c_set_keyboard :: Ptr WlrSea
 
 seatSetKeyboard :: Ptr WlrSeat -> Ptr InputDevice -> IO ()
 seatSetKeyboard = c_set_keyboard
+
+foreign import ccall "wlr_seat_keyboard_clear_focus" c_keyboard_clear_focus :: Ptr WlrSeat -> IO ()
+
+keyboardClearFocus :: Ptr WlrSeat -> IO ()
+keyboardClearFocus = c_keyboard_clear_focus
