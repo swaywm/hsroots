@@ -101,9 +101,9 @@ foreign import ccall "wlr_seat_keyboard_notify_key" c_notify_key :: Ptr WlrSeat 
 keyboardNotifyKey :: Ptr WlrSeat -> Word32 -> Word32 -> KeyState -> IO ()
 keyboardNotifyKey seat time key state = c_notify_key seat time key (keyStateToInt state)
 
-foreign import ccall "wlr_seat_keyboard_notify_modifiers" c_notify_modifiers :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+foreign import ccall "wlr_seat_keyboard_notify_modifiers" c_notify_modifiers :: Ptr WlrSeat -> IO ()
 
-keyboardNotifyModifiers :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+keyboardNotifyModifiers :: Ptr WlrSeat -> IO ()
 keyboardNotifyModifiers = c_notify_modifiers
 
 foreign import ccall unsafe "wlr_seat_set_keyboard" c_set_keyboard :: Ptr WlrSeat  -> Ptr InputDevice -> IO ()
