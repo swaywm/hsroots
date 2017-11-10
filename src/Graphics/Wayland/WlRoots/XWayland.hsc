@@ -87,11 +87,10 @@ getX11SurfaceEvents ptr = WlrX11SurfaceEvents
 
     }
 
-foreign import ccall "wlr_xwayland_surface_activate" c_activate :: Ptr XWayland -> Ptr X11Surface -> IO ()
+foreign import ccall "wlr_xwayland_surface_activate" c_activate :: Ptr XWayland -> Ptr X11Surface -> Bool -> IO ()
 
-activateX11Surface :: Ptr XWayland -> Maybe (Ptr X11Surface) -> IO ()
-activateX11Surface xway Nothing = activateX11Surface xway (Just nullPtr)
-activateX11Surface xway (Just ptr) = c_activate xway ptr
+activateX11Surface :: Ptr XWayland -> Ptr X11Surface -> Bool -> IO ()
+activateX11Surface = c_activate
 
 foreign import ccall "wlr_xwayland_surface_configure" c_configure :: Ptr XWayland -> Ptr X11Surface -> Int16 -> Int16 -> Word32 -> Word32 -> IO ()
 
