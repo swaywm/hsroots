@@ -24,6 +24,7 @@ module Graphics.Wayland.WlRoots.XdgShell
     , xdgPopupAt
 
     , getTitle
+    , getAppId
     )
 where
 
@@ -172,3 +173,6 @@ getPopupGeometry surf = #{peek struct wlr_xdg_popup_v6, geometry} =<< getPopupSt
 
 getTitle :: Ptr WlrXdgSurface -> IO Text
 getTitle ptr = fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_xdg_surface_v6, title} ptr
+
+getAppId :: Ptr WlrXdgSurface -> IO Text
+getAppId ptr = fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_xdg_surface_v6, app_id} ptr

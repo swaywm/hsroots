@@ -21,6 +21,7 @@ module Graphics.Wayland.WlRoots.XWayland
 
     , x11SurfaceOverrideRedirect
     , getTitle
+    , getClass
     )
 where
 
@@ -131,3 +132,6 @@ x11SurfaceOverrideRedirect ptr = do
 
 getTitle :: Ptr X11Surface -> IO Text
 getTitle ptr = fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_xwayland_surface, title} ptr
+
+getClass :: Ptr X11Surface -> IO Text
+getClass ptr = fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_xwayland_surface, class} ptr
