@@ -22,11 +22,15 @@ module Graphics.Wayland.WlRoots.XdgShell
 
     , getPopupGeometry
     , xdgPopupAt
+
+    , getTitle
     )
 where
 
 #include <wlr/types/wlr_xdg_shell_v6.h>
 
+import Data.ByteString.Unsafe (unsafePackCString)
+import Data.Text (Text)
 import Data.Word (Word32)
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr, plusPtr, nullPtr)
@@ -46,6 +50,7 @@ import Graphics.Wayland.List (getListFromHead)
 import Graphics.Wayland.Signal
 import Control.Monad (when)
 
+import qualified Data.Text.Encoding as E
 
 data WlrXdgShell
 
@@ -163,3 +168,7 @@ getPopupState = #{peek struct wlr_xdg_surface_v6, popup_state}
 
 getPopupGeometry :: Ptr WlrXdgSurface -> IO WlrBox
 getPopupGeometry surf = #{peek struct wlr_xdg_popup_v6, geometry} =<< getPopupState surf
+
+
+getTitle :: Ptr WlrXdgSurface -> IO Text
+getTitle ptr = fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_xdg_surface_v6, title} ptr

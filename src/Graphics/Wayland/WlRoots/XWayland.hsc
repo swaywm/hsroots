@@ -20,12 +20,15 @@ module Graphics.Wayland.WlRoots.XWayland
     , getX11SurfaceGeometry
 
     , x11SurfaceOverrideRedirect
+    , getTitle
     )
 where
 
 #include <wlr/xwayland.h>
 
 
+import Data.ByteString.Unsafe (unsafePackCString)
+import Data.Text (Text)
 import System.IO
 import Data.Word (Word16, Word32)
 import Data.Int (Int16)
@@ -45,6 +48,8 @@ import Graphics.Wayland.Server (DisplayServer (..))
 import Graphics.Wayland.WlRoots.Compositor (WlrCompositor)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Box (Point(..), WlrBox(..))
+
+import qualified Data.Text.Encoding as E
 
 data XWayland
 
@@ -123,3 +128,6 @@ x11SurfaceOverrideRedirect :: Ptr X11Surface -> IO Bool
 x11SurfaceOverrideRedirect ptr = do
     val :: Word8 <- #{peek struct wlr_xwayland_surface, override_redirect} ptr
     pure $ val /= 0
+
+getTitle :: Ptr X11Surface -> IO Text
+getTitle ptr = fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_xwayland_surface, title} ptr
