@@ -16,6 +16,7 @@ module Graphics.Wayland.WlRoots.Render
 
     , doRender
     , isTextureValid
+    , getTextureSize
 
     , renderColoredQuad
     )
@@ -104,3 +105,9 @@ foreign import ccall unsafe "wlr_render_colored_quad" c_colored_quad :: Ptr Rend
 renderColoredQuad :: Ptr Renderer -> Color -> Matrix -> IO ()
 renderColoredQuad rend col (Matrix m) = with col $ \cptr ->
     c_colored_quad rend cptr m
+
+getTextureSize :: Ptr Texture -> IO (Int, Int)
+getTextureSize ptr = do
+    width :: CInt <- #{peek struct wlr_texture, width} ptr
+    height :: CInt <- #{peek struct wlr_texture, height} ptr
+    pure (fromIntegral width, fromIntegral height)
