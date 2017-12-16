@@ -26,6 +26,7 @@ module Graphics.Wayland.WlRoots.Output
 
     , getOutputBox
     , getOutputName
+    , getOutputScale
     )
 where
 
@@ -158,3 +159,6 @@ getOutputBox ptr = do
     width :: Word32 <- #{peek struct wlr_output, width} ptr
     height :: Word32 <- #{peek struct wlr_output, height} ptr
     pure $ WlrBox (fromIntegral x) (fromIntegral y) (fromIntegral width) (fromIntegral height)
+
+getOutputScale :: Ptr Output -> IO Float
+getOutputScale = #{peek struct wlr_output, scale}

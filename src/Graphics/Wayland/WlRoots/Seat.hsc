@@ -18,13 +18,21 @@ module Graphics.Wayland.WlRoots.Seat
     , seatSetKeyboard
 
     , keyboardClearFocus
+
+    , SetCursorEvent (..)
+    , SeatSignals (..)
+
+    , seatGetSignals
+    , seatClientGetClient
     )
 where
 
 #include <wlr/types/wlr_seat.h>
 
+import Foreign.Storable(Storable(..))
+import Data.Int (Int32)
 import Data.Word (Word32)
-import Foreign.Ptr (Ptr)
+import Foreign.Ptr (Ptr, plusPtr)
 import Foreign.C.String (CString, withCString)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CInt(..))
@@ -34,6 +42,8 @@ import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Buttons
 import Graphics.Wayland.WlRoots.Input.Keyboard (KeyState(..), keyStateToInt)
+
+import Graphics.Wayland.Signal (WlSignal)
 
 data WlrSeat
 
@@ -117,3 +127,41 @@ foreign import ccall "wlr_seat_keyboard_clear_focus" c_keyboard_clear_focus :: P
 
 keyboardClearFocus :: Ptr WlrSeat -> IO ()
 keyboardClearFocus = c_keyboard_clear_focus
+
+data WlrSeatClient
+
+seatClientGetClient :: Ptr WlrSeatClient -> IO Client
+seatClientGetClient = fmap Client . #{peek struct wlr_seat_client, client}
+
+data SetCursorEvent = SetCursorEvent
+    { seatCursorSurfaceClient   :: Ptr WlrSeatClient
+    , seatCursorSurfaceSurface  :: Ptr WlrSurface
+    , seatCursorSurfaceSerial   :: Word32
+    , seatCursorSurfaceHotspotX :: Int32
+    , seatCursorSurfaceHotspotY :: Int32
+    }
+
+instance Storable SetCursorEvent where
+    sizeOf _ = #{size struct wlr_seat_pointer_request_set_cursor_event}
+    alignment _ = #{alignment struct wlr_seat_pointer_request_set_cursor_event}
+    peek ptr = SetCursorEvent
+        <$> #{peek struct wlr_seat_pointer_request_set_cursor_event, seat_client} ptr
+        <*> #{peek struct wlr_seat_pointer_request_set_cursor_event, surface} ptr
+        <*> #{peek struct wlr_seat_pointer_request_set_cursor_event, serial} ptr
+        <*> #{peek struct wlr_seat_pointer_request_set_cursor_event, hotspot_x} ptr
+        <*> #{peek struct wlr_seat_pointer_request_set_cursor_event, hotspot_y} ptr
+    poke ptr evt = do
+        #{poke struct wlr_seat_pointer_request_set_cursor_event, seat_client} ptr $ seatCursorSurfaceClient evt
+        #{poke struct wlr_seat_pointer_request_set_cursor_event, surface} ptr $ seatCursorSurfaceSurface evt
+        #{poke struct wlr_seat_pointer_request_set_cursor_event, serial} ptr $ seatCursorSurfaceSerial evt
+        #{poke struct wlr_seat_pointer_request_set_cursor_event, hotspot_x} ptr $ seatCursorSurfaceHotspotX evt
+        #{poke struct wlr_seat_pointer_request_set_cursor_event, hotspot_y} ptr $ seatCursorSurfaceHotspotY evt
+
+data SeatSignals = SeatSignals
+    { seatSignalSetCursor :: Ptr (WlSignal (SetCursorEvent))
+    }
+
+seatGetSignals :: Ptr WlrSeat -> SeatSignals
+seatGetSignals ptr = SeatSignals
+    { seatSignalSetCursor = #{ptr struct wlr_seat, events.request_set_cursor} ptr
+    }

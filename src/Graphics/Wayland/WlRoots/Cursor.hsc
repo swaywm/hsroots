@@ -22,12 +22,14 @@ module Graphics.Wayland.WlRoots.Cursor
     , CursorEvents (..)
     , cursorGetEvents
     , setCursorImage
+    , setCursorSurface
     )
 where
 
 #include <wlr/types/wlr_cursor.h>
 
 import Data.Word (Word32)
+import Data.Int (Int32)
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Foreign.Ptr (Ptr, nullPtr, plusPtr)
 import Foreign.Storable (Storable(..))
@@ -38,6 +40,7 @@ import Graphics.Wayland.WlRoots.Input.Pointer (WlrEventPointerButton, WlrEventPo
 import Graphics.Wayland.WlRoots.Output (Output)
 import Graphics.Wayland.WlRoots.OutputLayout (WlrOutputLayout)
 import Graphics.Wayland.WlRoots.XCursor (WlrXCursor)
+import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 
 data CursorEvents = CursorEvents
     { cursorButton :: Ptr (WlSignal WlrEventPointerButton)
@@ -146,3 +149,8 @@ foreign import ccall "wlr_cursor_set_image" c_set_cursor_image :: Ptr WlrCursor 
 setCursorImage :: Ptr WlrCursor -> Ptr () -> Word32 -> Word32 -> Word32 -> Word32 -> Word32 -> IO ()
 setCursorImage cursor buffer stride width height hotspot_x hotspot_y =
     throwErrnoIf_ not "setCursorImage" $ c_set_cursor_image cursor buffer stride width height hotspot_x hotspot_y
+
+foreign import ccall "wlr_cursor_set_surface" c_set_surface :: Ptr WlrCursor -> Ptr WlrSurface -> Int32 -> Int32 -> IO ()
+
+setCursorSurface :: Integral a => Ptr WlrCursor -> Ptr WlrSurface -> a -> a -> IO ()
+setCursorSurface cursor surface hotspotX hotspotY = c_set_surface cursor surface (fromIntegral hotspotX) (fromIntegral hotspotY)
