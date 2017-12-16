@@ -89,7 +89,7 @@ effectiveResolution output = alloca $ \width -> alloca $ \height -> do
     pure (fromIntegral width_val, fromIntegral height_val)
 
 
-foreign import ccall unsafe "wlr_output_transform" c_output_transform :: Ptr Output -> CInt -> IO ()
+foreign import ccall unsafe "wlr_output_set_transform" c_output_transform :: Ptr Output -> CInt -> IO ()
 
 transformOutput :: Ptr Output -> OutputTransform -> IO ()
 transformOutput ptr (OutputTransform x) =
