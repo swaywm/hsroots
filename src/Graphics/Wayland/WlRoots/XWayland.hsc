@@ -73,9 +73,9 @@ data X11Surface
 xwaySurfaceGetSurface :: Ptr X11Surface -> IO (Ptr WlrSurface)
 xwaySurfaceGetSurface = #{peek struct wlr_xwayland_surface, surface}
 
-foreign import ccall "wlr_xwayland_surface_close" c_close :: Ptr XWayland -> Ptr X11Surface -> IO ()
+foreign import ccall "wlr_xwayland_surface_close" c_close :: Ptr X11Surface -> IO ()
 
-xwayCloseSurface :: Ptr XWayland -> Ptr X11Surface -> IO ()
+xwayCloseSurface :: Ptr X11Surface -> IO ()
 xwayCloseSurface = c_close
 
 getX11SurfaceDataPtr :: Ptr X11Surface -> Ptr (Ptr a)
@@ -83,6 +83,7 @@ getX11SurfaceDataPtr = #{ptr struct wlr_xwayland_surface, data}
 
 data WlrX11SurfaceEvents = WlrX11SurfaceEvents
     { x11SurfacEvtDestroy :: Ptr (WlSignal X11Surface)
+    , x11SurfacEvtType :: Ptr (WlSignal X11Surface)
 
     }
 
@@ -90,19 +91,20 @@ data WlrX11SurfaceEvents = WlrX11SurfaceEvents
 getX11SurfaceEvents :: Ptr X11Surface -> WlrX11SurfaceEvents
 getX11SurfaceEvents ptr = WlrX11SurfaceEvents
     { x11SurfacEvtDestroy = #{ptr struct wlr_xwayland_surface, events.destroy} ptr
+    , x11SurfacEvtType = #{ptr struct wlr_xwayland_surface, events.set_window_type} ptr
 
     }
 
-foreign import ccall "wlr_xwayland_surface_activate" c_activate :: Ptr XWayland -> Ptr X11Surface -> Bool -> IO ()
+foreign import ccall "wlr_xwayland_surface_activate" c_activate :: Ptr X11Surface -> Bool -> IO ()
 
-activateX11Surface :: Ptr XWayland -> Ptr X11Surface -> Bool -> IO ()
+activateX11Surface :: Ptr X11Surface -> Bool -> IO ()
 activateX11Surface = c_activate
 
-foreign import ccall "wlr_xwayland_surface_configure" c_configure :: Ptr XWayland -> Ptr X11Surface -> Int16 -> Int16 -> Word32 -> Word32 -> IO ()
+foreign import ccall "wlr_xwayland_surface_configure" c_configure :: Ptr X11Surface -> Int16 -> Int16 -> Word32 -> Word32 -> IO ()
 
-configureX11Surface :: Ptr XWayland -> Ptr X11Surface -> Int16 -> Int16 -> Word32 -> Word32 -> IO ()
-configureX11Surface xway surf x y width height =
-    c_configure xway surf x y width height
+configureX11Surface :: Ptr X11Surface -> Int16 -> Int16 -> Word32 -> Word32 -> IO ()
+configureX11Surface surf x y width height =
+    c_configure surf x y width height
 
 
 getX11SurfacePosition :: Ptr X11Surface -> IO (Point)
