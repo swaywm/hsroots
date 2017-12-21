@@ -11,6 +11,9 @@ module Graphics.Wayland.WlRoots.XWayland
     , xwayCloseSurface
     , getX11SurfaceDataPtr
 
+    , ConfigureEvent (..)
+    , MoveEvent (..)
+    , ResizeEvent (..)
     , WlrX11SurfaceEvents (..)
     , getX11SurfaceEvents
     , activateX11Surface
@@ -81,18 +84,91 @@ xwayCloseSurface = c_close
 getX11SurfaceDataPtr :: Ptr X11Surface -> Ptr (Ptr a)
 getX11SurfaceDataPtr = #{ptr struct wlr_xwayland_surface, data}
 
-data WlrX11SurfaceEvents = WlrX11SurfaceEvents
-    { x11SurfacEvtDestroy :: Ptr (WlSignal X11Surface)
-    , x11SurfacEvtType :: Ptr (WlSignal X11Surface)
+data ConfigureEvent = ConfigureEvent
+    { configureEvtSurface :: Ptr X11Surface
+    , configureEvtX       :: Int16
+    , configureEvtY       :: Int16
+    , configureEvtWidth   :: Word16
+    , configureEvtHeight  :: Word16
+    }
 
+instance Storable ConfigureEvent where
+    sizeOf _ = #{size struct wlr_xwayland_surface_configure_event}
+    alignment _ = #{alignment struct wlr_xwayland_surface_configure_event}
+    peek ptr = ConfigureEvent
+        <$> #{peek struct wlr_xwayland_surface_configure_event, surface} ptr
+        <*> #{peek struct wlr_xwayland_surface_configure_event, x} ptr
+        <*> #{peek struct wlr_xwayland_surface_configure_event, y} ptr
+        <*> #{peek struct wlr_xwayland_surface_configure_event, width} ptr
+        <*> #{peek struct wlr_xwayland_surface_configure_event, height} ptr
+    poke ptr evt = do
+        #{poke struct wlr_xwayland_surface_configure_event, surface} ptr $ configureEvtSurface evt
+        #{poke struct wlr_xwayland_surface_configure_event, x} ptr $ configureEvtX evt
+        #{poke struct wlr_xwayland_surface_configure_event, y} ptr $ configureEvtY evt
+        #{poke struct wlr_xwayland_surface_configure_event, width} ptr $ configureEvtWidth evt
+        #{poke struct wlr_xwayland_surface_configure_event, height} ptr $ configureEvtHeight evt
+
+data MoveEvent = MoveEvent
+    { moveEvtSurface :: Ptr X11Surface
+    }
+
+instance Storable MoveEvent where
+    sizeOf _ = #{size struct wlr_xwayland_move_event}
+    alignment _ = #{alignment struct wlr_xwayland_move_event}
+    peek ptr = MoveEvent
+        <$> #{peek struct wlr_xwayland_move_event, surface} ptr
+    poke ptr evt = do
+        #{poke struct wlr_xwayland_move_event, surface} ptr $ moveEvtSurface evt
+
+data ResizeEvent = ResizeEvent
+    { resizeEvtSurface :: Ptr X11Surface
+    , resizeEvtEdges :: Word32
+    }
+
+instance Storable ResizeEvent where
+    sizeOf _ = #{size struct wlr_xwayland_resize_event}
+    alignment _ = #{alignment struct wlr_xwayland_resize_event}
+    peek ptr = ResizeEvent
+        <$> #{peek struct wlr_xwayland_resize_event, surface} ptr
+        <*> #{peek struct wlr_xwayland_resize_event, edges} ptr
+    poke ptr evt = do
+        #{poke struct wlr_xwayland_resize_event, surface} ptr $ resizeEvtSurface evt
+        #{poke struct wlr_xwayland_resize_event, edges} ptr $ resizeEvtEdges evt
+
+data WlrX11SurfaceEvents = WlrX11SurfaceEvents
+    { x11SurfaceEvtDestroy :: Ptr (WlSignal X11Surface)
+    , x11SurfaceEvtConfigure :: Ptr (WlSignal ConfigureEvent)
+    , x11SurfaceEvtMove :: Ptr (WlSignal MoveEvent)
+    , x11SurfaceEvtResize :: Ptr (WlSignal ResizeEvent)
+    , x11SurfaceEvtFullscreen :: Ptr (WlSignal X11Surface)
+    , x11SurfaceEvtMaximize :: Ptr (WlSignal X11Surface)
+
+    , x11SurfaceEvtMap :: Ptr (WlSignal X11Surface)
+    , x11SurfaceEvtUnmap :: Ptr (WlSignal X11Surface)
+    , x11SurfaceEvtTitle :: Ptr (WlSignal X11Surface)
+    , x11SurfaceEvtClass :: Ptr (WlSignal X11Surface)
+    , x11SurfaceEvtParent :: Ptr (WlSignal X11Surface)
+    , x11SurfaceEvtPid :: Ptr (WlSignal X11Surface)
+    , x11SurfaceEvtType :: Ptr (WlSignal X11Surface)
     }
 
 
 getX11SurfaceEvents :: Ptr X11Surface -> WlrX11SurfaceEvents
 getX11SurfaceEvents ptr = WlrX11SurfaceEvents
-    { x11SurfacEvtDestroy = #{ptr struct wlr_xwayland_surface, events.destroy} ptr
-    , x11SurfacEvtType = #{ptr struct wlr_xwayland_surface, events.set_window_type} ptr
+    { x11SurfaceEvtDestroy = #{ptr struct wlr_xwayland_surface, events.destroy} ptr
+    , x11SurfaceEvtConfigure = #{ptr struct wlr_xwayland_surface, events.request_configure} ptr
+    , x11SurfaceEvtMove = #{ptr struct wlr_xwayland_surface, events.request_move} ptr
+    , x11SurfaceEvtResize = #{ptr struct wlr_xwayland_surface, events.request_resize} ptr
+    , x11SurfaceEvtFullscreen = #{ptr struct wlr_xwayland_surface, events.request_fullscreen} ptr
+    , x11SurfaceEvtMaximize = #{ptr struct wlr_xwayland_surface, events.request_maximize} ptr
 
+    , x11SurfaceEvtMap = #{ptr struct wlr_xwayland_surface, events.map_notify} ptr
+    , x11SurfaceEvtUnmap = #{ptr struct wlr_xwayland_surface, events.unmap_notify} ptr
+    , x11SurfaceEvtTitle = #{ptr struct wlr_xwayland_surface, events.set_title} ptr
+    , x11SurfaceEvtClass = #{ptr struct wlr_xwayland_surface, events.set_class} ptr
+    , x11SurfaceEvtParent = #{ptr struct wlr_xwayland_surface, events.set_parent} ptr
+    , x11SurfaceEvtPid = #{ptr struct wlr_xwayland_surface, events.set_pid} ptr
+    , x11SurfaceEvtType = #{ptr struct wlr_xwayland_surface, events.set_window_type} ptr
     }
 
 foreign import ccall "wlr_xwayland_surface_activate" c_activate :: Ptr X11Surface -> Bool -> IO ()
