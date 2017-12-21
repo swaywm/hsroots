@@ -20,6 +20,7 @@ data WlrBox = WlrBox
     } deriving (Eq, Show)
 
 data Point = Point { pointX :: Int, pointY :: Int }
+    deriving (Eq, Show)
 
 boxContainsPoint :: Point -> WlrBox -> Bool
 boxContainsPoint (Point px py) (WlrBox bx by bw bh) =

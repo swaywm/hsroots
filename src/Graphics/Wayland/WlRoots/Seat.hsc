@@ -22,6 +22,7 @@ module Graphics.Wayland.WlRoots.Seat
     , SetCursorEvent (..)
     , SeatSignals (..)
 
+    , WlrSeatClient
     , seatGetSignals
     , seatClientGetClient
     )

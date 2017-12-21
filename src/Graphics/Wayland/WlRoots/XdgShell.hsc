@@ -6,6 +6,10 @@ module Graphics.Wayland.WlRoots.XdgShell
     , WlrXdgSurface
     , xdgSurfaceGetSurface
 
+    , MoveEvent (..)
+    , ResizeEvent (..)
+    , MenuEvent (..)
+    , FullscreenEvent (..)
     , WlrXdgSurfaceEvents (..)
     , getXdgSurfaceEvents
     , getXdgSurfaceDataPtr
@@ -44,8 +48,10 @@ import Foreign.StablePtr
     )
 
 import Graphics.Wayland.Server (DisplayServer(..))
+import Graphics.Wayland.WlRoots.Output (Output)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Box (WlrBox)
+import Graphics.Wayland.WlRoots.Seat (WlrSeatClient)
 import Graphics.Wayland.List (getListFromHead)
 
 import Graphics.Wayland.Signal
@@ -79,20 +85,119 @@ isXdgPopup surf = do
     role :: CInt <- #{peek struct wlr_xdg_surface_v6, role} surf
     pure (role == #{const WLR_XDG_SURFACE_V6_ROLE_POPUP})
 
-data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
-    { xdgSurfacEvtDestroy :: Ptr (WlSignal WlrXdgSurface)
-
-    }
-
 xdgSurfaceGetSurface :: Ptr WlrXdgSurface -> IO (Ptr WlrSurface)
 xdgSurfaceGetSurface =
     #{peek struct wlr_xdg_surface_v6, surface}
 
+data MoveEvent = MoveEvent
+    { moveEvtSurface :: Ptr WlrXdgSurface
+    , moveEvtSeat    :: Ptr WlrSeatClient
+    , moveEvtSerial  :: Word32
+    }
+
+instance Storable MoveEvent where
+    sizeOf _ = #{size struct wlr_xdg_toplevel_v6_move_event}
+    alignment _ = #{alignment struct wlr_xdg_toplevel_v6_move_event}
+    peek ptr = MoveEvent
+        <$> #{peek struct wlr_xdg_toplevel_v6_move_event, surface} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_move_event, seat} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_move_event, serial} ptr
+    poke ptr evt = do
+        #{poke struct wlr_xdg_toplevel_v6_move_event, surface} ptr $ moveEvtSurface evt
+        #{poke struct wlr_xdg_toplevel_v6_move_event, seat} ptr $ moveEvtSeat evt
+        #{poke struct wlr_xdg_toplevel_v6_move_event, serial} ptr $ moveEvtSerial evt
+
+
+data ResizeEvent = ResizeEvent
+    { resizeEvtSurface :: Ptr WlrXdgSurface
+    , resizeEvtSeat    :: Ptr WlrSeatClient
+    , resizeEvtSerial  :: Word32
+    , resizeEvtEdges   :: Word32 -- TODO: Make this a [Edge]
+    }
+
+instance Storable ResizeEvent where
+    sizeOf _ = #{size struct wlr_xdg_toplevel_v6_resize_event}
+    alignment _ = #{alignment struct wlr_xdg_toplevel_v6_resize_event}
+    peek ptr = ResizeEvent
+        <$> #{peek struct wlr_xdg_toplevel_v6_resize_event, surface} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_resize_event, seat} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_resize_event, serial} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_resize_event, edges} ptr
+    poke ptr evt = do
+        #{poke struct wlr_xdg_toplevel_v6_resize_event, surface} ptr $ resizeEvtSurface evt
+        #{poke struct wlr_xdg_toplevel_v6_resize_event, seat} ptr $ resizeEvtSeat evt
+        #{poke struct wlr_xdg_toplevel_v6_resize_event, serial} ptr $ resizeEvtSerial evt
+        #{poke struct wlr_xdg_toplevel_v6_resize_event, edges} ptr $ resizeEvtEdges evt
+
+data MenuEvent = MenuEvent
+    { menuEvtSurface :: Ptr WlrXdgSurface
+    , menuEvtSeat    :: Ptr WlrSeatClient
+    , menuEvtSerial  :: Word32
+    , menuEvtX       :: Word32
+    , menuEvtY       :: Word32
+    }
+
+instance Storable MenuEvent where
+    sizeOf _ = #{size struct wlr_xdg_toplevel_v6_show_window_menu_event}
+    alignment _ = #{alignment struct wlr_xdg_toplevel_v6_show_window_menu_event}
+    peek ptr = MenuEvent
+        <$> #{peek struct wlr_xdg_toplevel_v6_show_window_menu_event, surface} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_show_window_menu_event, seat} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_show_window_menu_event, serial} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_show_window_menu_event, x} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_show_window_menu_event, y} ptr
+    poke ptr evt = do
+        #{poke struct wlr_xdg_toplevel_v6_show_window_menu_event, surface} ptr $ menuEvtSurface evt
+        #{poke struct wlr_xdg_toplevel_v6_show_window_menu_event, seat} ptr $ menuEvtSeat evt
+        #{poke struct wlr_xdg_toplevel_v6_show_window_menu_event, serial} ptr $ menuEvtSerial evt
+        #{poke struct wlr_xdg_toplevel_v6_show_window_menu_event, x} ptr $ menuEvtX evt
+        #{poke struct wlr_xdg_toplevel_v6_show_window_menu_event, y} ptr $ menuEvtY evt
+
+data FullscreenEvent = FullscreenEvent
+    { fullscreenEvtSurface :: Ptr WlrXdgSurface
+    , fullscreenEvtFull    :: Bool
+    , fullscreenEvtOutput  :: Ptr Output
+    }
+
+instance Storable FullscreenEvent where
+    sizeOf _ = #{size struct wlr_xdg_toplevel_v6_set_fullscreen_event}
+    alignment _ = #{alignment struct wlr_xdg_toplevel_v6_set_fullscreen_event}
+    peek ptr = FullscreenEvent
+        <$> #{peek struct wlr_xdg_toplevel_v6_set_fullscreen_event, surface} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_set_fullscreen_event, fullscreen} ptr
+        <*> #{peek struct wlr_xdg_toplevel_v6_set_fullscreen_event, output} ptr
+    poke ptr evt = do
+        #{poke struct wlr_xdg_toplevel_v6_set_fullscreen_event, surface} ptr $ fullscreenEvtSurface evt
+        #{poke struct wlr_xdg_toplevel_v6_set_fullscreen_event, fullscreen} ptr $ fullscreenEvtFull evt
+        #{poke struct wlr_xdg_toplevel_v6_set_fullscreen_event, output} ptr $ fullscreenEvtOutput evt
+
+data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
+    { xdgSurfaceEvtCommit  :: Ptr (WlSignal WlrXdgSurface)
+    , xdgSurfaceEvtDestroy :: Ptr (WlSignal WlrXdgSurface)
+    , xdgSurfaceEvtTimeout :: Ptr (WlSignal WlrXdgSurface)
+
+    , xdgSurfaceEvtMaximize   :: Ptr (WlSignal WlrXdgSurface)
+    , xdgSurfaceEvtFullscreen :: Ptr (WlSignal FullscreenEvent)
+    , xdgSurfaceEvtMinimize   :: Ptr (WlSignal WlrXdgSurface)
+
+    , xdgSurfaceEvtMove   :: Ptr (WlSignal MoveEvent)
+    , xdgSurfaceEvtResize :: Ptr (WlSignal ResizeEvent)
+    , xdgSurfaceEvtMenu   :: Ptr (WlSignal MenuEvent)
+    }
 
 getXdgSurfaceEvents :: Ptr WlrXdgSurface -> WlrXdgSurfaceEvents
 getXdgSurfaceEvents ptr = WlrXdgSurfaceEvents
-    { xdgSurfacEvtDestroy = #{ptr struct wlr_xdg_surface_v6, events.destroy} ptr
+    { xdgSurfaceEvtDestroy = #{ptr struct wlr_xdg_surface_v6, events.destroy} ptr
+    , xdgSurfaceEvtCommit = #{ptr struct wlr_xdg_surface_v6, events.commit} ptr
+    , xdgSurfaceEvtTimeout = #{ptr struct wlr_xdg_surface_v6, events.ping_timeout} ptr
 
+    , xdgSurfaceEvtMaximize = #{ptr struct wlr_xdg_surface_v6, events.request_maximize} ptr
+    , xdgSurfaceEvtFullscreen = #{ptr struct wlr_xdg_surface_v6, events.request_fullscreen} ptr
+    , xdgSurfaceEvtMinimize = #{ptr struct wlr_xdg_surface_v6, events.request_minimize} ptr
+
+    , xdgSurfaceEvtMove = #{ptr struct wlr_xdg_surface_v6, events.request_move} ptr
+    , xdgSurfaceEvtResize = #{ptr struct wlr_xdg_surface_v6, events.request_resize} ptr
+    , xdgSurfaceEvtMenu = #{ptr struct wlr_xdg_surface_v6, events.request_show_window_menu} ptr
     }
 
 getXdgSurfaceDataPtr :: Ptr WlrXdgSurface -> Ptr (Ptr ())
