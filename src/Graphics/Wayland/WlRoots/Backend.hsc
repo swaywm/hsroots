@@ -17,7 +17,7 @@ import Foreign.Ptr (Ptr, plusPtr)
 import Graphics.Wayland.Server (DisplayServer(..))
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Graphics.Wayland.WlRoots.Egl (EGL)
-import Graphics.Wayland.WlRoots.Output (Output)
+import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.Signal (WlSignal)
 
@@ -49,8 +49,8 @@ backendGetEgl = throwErrnoIfNull "backendGetEgl" . c_backend_get_egl
 data BackendSignals = BackendSignals
     { inputAdd     :: Ptr (WlSignal InputDevice)
     , inputRemove  :: Ptr (WlSignal InputDevice)
-    , outputAdd    :: Ptr (WlSignal Output)
-    , outputRemove :: Ptr (WlSignal Output)
+    , outputAdd    :: Ptr (WlSignal WlrOutput)
+    , outputRemove :: Ptr (WlSignal WlrOutput)
     }
 
 backendGetSignals :: Ptr Backend -> BackendSignals

@@ -48,7 +48,7 @@ import Foreign.StablePtr
     )
 
 import Graphics.Wayland.Server (DisplayServer(..))
-import Graphics.Wayland.WlRoots.Output (Output)
+import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Box (WlrBox)
 import Graphics.Wayland.WlRoots.Seat (WlrSeatClient)
@@ -156,7 +156,7 @@ instance Storable MenuEvent where
 data FullscreenEvent = FullscreenEvent
     { fullscreenEvtSurface :: Ptr WlrXdgSurface
     , fullscreenEvtFull    :: Bool
-    , fullscreenEvtOutput  :: Ptr Output
+    , fullscreenEvtOutput  :: Ptr WlrOutput
     }
 
 instance Storable FullscreenEvent where

@@ -37,7 +37,7 @@ import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.WlRoots.Box (WlrBox)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Pointer (WlrEventPointerButton, WlrEventPointerMotion, WlrEventPointerAbsMotion)
-import Graphics.Wayland.WlRoots.Output (Output)
+import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.OutputLayout (WlrOutputLayout)
 import Graphics.Wayland.WlRoots.XCursor (WlrXCursor)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
@@ -121,15 +121,15 @@ attachOutputLayout :: Ptr WlrCursor -> Ptr WlrOutputLayout -> IO ()
 attachOutputLayout = c_attach_layout
 
 
-foreign import ccall "wlr_cursor_map_to_output" c_map_to_output :: Ptr WlrCursor -> Ptr Output -> IO ()
+foreign import ccall "wlr_cursor_map_to_output" c_map_to_output :: Ptr WlrCursor -> Ptr WlrOutput -> IO ()
 
-mapToOutput :: Ptr WlrCursor -> Ptr Output -> IO ()
+mapToOutput :: Ptr WlrCursor -> Ptr WlrOutput -> IO ()
 mapToOutput = c_map_to_output
 
 
-foreign import ccall "wlr_cursor_map_input_to_output" c_map_intput_to_output :: Ptr WlrCursor -> Ptr InputDevice -> Ptr Output -> IO ()
+foreign import ccall "wlr_cursor_map_input_to_output" c_map_intput_to_output :: Ptr WlrCursor -> Ptr InputDevice -> Ptr WlrOutput -> IO ()
 
-mapInputToOutput :: Ptr WlrCursor -> Ptr InputDevice -> Ptr Output -> IO ()
+mapInputToOutput :: Ptr WlrCursor -> Ptr InputDevice -> Ptr WlrOutput -> IO ()
 mapInputToOutput = c_map_intput_to_output
 
 

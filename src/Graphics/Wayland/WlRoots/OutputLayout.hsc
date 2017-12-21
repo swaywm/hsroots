@@ -33,7 +33,7 @@ import Foreign.Marshal.Alloc (alloca)
 import Foreign.Storable (Storable(peek, peekByteOff))
 import Data.Composition ((.:))
 
-import Graphics.Wayland.WlRoots.Output (Output)
+import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Box (Point(..))
 import Graphics.Wayland.List (getListFromHead)
 
@@ -59,12 +59,12 @@ layoutOuputGetPosition ptr = do
     y :: CInt <- #{peek struct wlr_output_layout_output, y} ptr
     pure $ Point (fromIntegral x) (fromIntegral y)
 
-foreign import ccall "wlr_output_layout_get" c_layout_get :: Ptr WlrOutputLayout -> Ptr Output -> IO (Ptr WlrOutputLayoutOutput)
+foreign import ccall "wlr_output_layout_get" c_layout_get :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO (Ptr WlrOutputLayoutOutput)
 
-layoutGetOutput :: Ptr WlrOutputLayout -> Ptr Output -> IO (Ptr WlrOutputLayoutOutput)
+layoutGetOutput :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO (Ptr WlrOutputLayoutOutput)
 layoutGetOutput = throwErrnoIfNull "layoutGetOutput" .: c_layout_get
 
-layoutOutputGetOutput :: Ptr WlrOutputLayoutOutput -> IO (Ptr Output)
+layoutOutputGetOutput :: Ptr WlrOutputLayoutOutput -> IO (Ptr WlrOutput)
 layoutOutputGetOutput = #{peek struct wlr_output_layout_output, output}
 
 layoutGetOutputs :: Ptr WlrOutputLayout -> IO [Ptr WlrOutputLayoutOutput]
@@ -72,9 +72,9 @@ layoutGetOutputs layout =
     getListFromHead (#{ptr struct wlr_output_layout, outputs} layout) #{offset struct wlr_output_layout_output, link}
 
 
-foreign import ccall "wlr_output_layout_output_at" c_layout_at :: Ptr WlrOutputLayout -> Double -> Double -> IO (Ptr Output)
+foreign import ccall "wlr_output_layout_output_at" c_layout_at :: Ptr WlrOutputLayout -> Double -> Double -> IO (Ptr WlrOutput)
 
-layoutAtPos :: Ptr WlrOutputLayout -> Double -> Double -> IO (Maybe (Ptr Output))
+layoutAtPos :: Ptr WlrOutputLayout -> Double -> Double -> IO (Maybe (Ptr WlrOutput))
 layoutAtPos layout x y = do
     ret <- c_layout_at layout x y
     pure $ if ret == nullPtr
@@ -82,43 +82,43 @@ layoutAtPos layout x y = do
         else Just ret
 
 
-foreign import ccall "wlr_output_layout_add" c_output_add :: Ptr WlrOutputLayout -> Ptr Output -> CInt -> CInt -> IO ()
+foreign import ccall "wlr_output_layout_add" c_output_add :: Ptr WlrOutputLayout -> Ptr WlrOutput -> CInt -> CInt -> IO ()
 
-addOutput :: Ptr WlrOutputLayout -> Ptr Output -> Int -> Int -> IO ()
+addOutput :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Int -> Int -> IO ()
 addOutput layout output x y =
     c_output_add layout output (fromIntegral x) (fromIntegral y)
 
 
-foreign import ccall "wlr_output_layout_move" c_output_move :: Ptr WlrOutputLayout -> Ptr Output -> CInt -> CInt -> IO ()
+foreign import ccall "wlr_output_layout_move" c_output_move :: Ptr WlrOutputLayout -> Ptr WlrOutput -> CInt -> CInt -> IO ()
 
-moveOutput :: Ptr WlrOutputLayout -> Ptr Output -> Int -> Int -> IO ()
+moveOutput :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Int -> Int -> IO ()
 moveOutput layout output x y =
     c_output_move layout output (fromIntegral x) (fromIntegral y)
 
 
-foreign import ccall "wlr_output_layout_remove" c_output_remove :: Ptr WlrOutputLayout -> Ptr Output -> IO ()
+foreign import ccall "wlr_output_layout_remove" c_output_remove :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO ()
 
-removeOutput :: Ptr WlrOutputLayout -> Ptr Output -> IO ()
+removeOutput :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO ()
 removeOutput layout output =
     c_output_remove layout output
 
 -- TODO: output_cords
 
-foreign import ccall "wlr_output_layout_contains_point" c_contains_point :: Ptr WlrOutputLayout -> Ptr Output -> CInt -> CInt -> IO Bool
+foreign import ccall "wlr_output_layout_contains_point" c_contains_point :: Ptr WlrOutputLayout -> Ptr WlrOutput -> CInt -> CInt -> IO Bool
 
-outputContainsPoint :: Ptr WlrOutputLayout -> Ptr Output -> Int -> Int -> IO Bool
+outputContainsPoint :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Int -> Int -> IO Bool
 outputContainsPoint layout output x y = c_contains_point layout output (fromIntegral x) (fromIntegral y)
 
 
-foreign import ccall "wlr_output_layout_intersects" c_intersects :: Ptr WlrOutputLayout -> Ptr Output -> CInt -> CInt -> CInt -> CInt -> IO Bool
+foreign import ccall "wlr_output_layout_intersects" c_intersects :: Ptr WlrOutputLayout -> Ptr WlrOutput -> CInt -> CInt -> CInt -> CInt -> IO Bool
 
-outputIntersects :: Ptr WlrOutputLayout -> Ptr Output -> Int -> Int -> Int -> Int -> IO Bool
+outputIntersects :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Int -> Int -> Int -> Int -> IO Bool
 outputIntersects layout output x1 y1 x2 y2 = c_intersects layout output (fromIntegral x1) (fromIntegral y1) (fromIntegral x2) (fromIntegral y2)
 
 
-foreign import ccall "wlr_output_layout_closest_point" c_closest_point :: Ptr WlrOutputLayout -> Ptr Output -> Double -> Double -> Ptr Double -> Ptr Double -> IO ()
+foreign import ccall "wlr_output_layout_closest_point" c_closest_point :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Double -> Double -> Ptr Double -> Ptr Double -> IO ()
 
-closestPoint :: Ptr WlrOutputLayout -> Maybe (Ptr Output) -> Double -> Double -> IO (Double, Double)
+closestPoint :: Ptr WlrOutputLayout -> Maybe (Ptr WlrOutput) -> Double -> Double -> IO (Double, Double)
 closestPoint layout Nothing x y = closestPoint layout (Just nullPtr) x y
 closestPoint layout (Just output) x y = alloca $ \xptr -> alloca $ \yptr -> do
     c_closest_point layout output x y xptr yptr
@@ -128,7 +128,7 @@ closestPoint layout (Just output) x y = alloca $ \xptr -> alloca $ \yptr -> do
 
 -- TODO: Box
 
-foreign import ccall "wlr_output_layout_add_auto" c_add_auto :: Ptr WlrOutputLayout -> Ptr Output -> IO ()
+foreign import ccall "wlr_output_layout_add_auto" c_add_auto :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO ()
 
-addOutputAuto :: Ptr WlrOutputLayout -> Ptr Output -> IO ()
+addOutputAuto :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO ()
 addOutputAuto = c_add_auto

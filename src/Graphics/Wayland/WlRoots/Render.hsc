@@ -31,16 +31,16 @@ import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Foreign.C.Types (CFloat(..), CInt(..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Render.Color (Color)
-import Graphics.Wayland.WlRoots.Output (Output)
+import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Foreign.Marshal.Utils (with)
 import Control.Exception (bracket_)
 
 data Renderer
 data Texture
 
-foreign import ccall unsafe "wlr_renderer_begin" c_renderer_begin :: Ptr Renderer -> Ptr Output -> IO ()
+foreign import ccall unsafe "wlr_renderer_begin" c_renderer_begin :: Ptr Renderer -> Ptr WlrOutput -> IO ()
 
-rendererBegin :: Ptr Renderer -> Ptr Output -> IO ()
+rendererBegin :: Ptr Renderer -> Ptr WlrOutput -> IO ()
 rendererBegin = c_renderer_begin
 
 
@@ -50,7 +50,7 @@ rendererEnd :: Ptr Renderer -> IO ()
 rendererEnd = c_renderer_end
 
 
-doRender :: Ptr Renderer -> Ptr Output -> IO a -> IO a
+doRender :: Ptr Renderer -> Ptr WlrOutput -> IO a -> IO a
 doRender renderer output = bracket_
     (rendererBegin renderer output)
     (rendererEnd renderer)
