@@ -4,6 +4,7 @@ module Graphics.Wayland.WlRoots.Box
 
     , boxContainsPoint
     , centerBox
+    , toOrigin
     )
 where
 
@@ -54,3 +55,6 @@ centerBox (WlrBox _ _ innerW innerH) (WlrBox x y outerW outerH) =
     let offX = (outerW - innerW) `div` 2
         offY = (outerH - innerH) `div` 2
      in WlrBox (x + offX) (y + offY) innerW innerH
+
+toOrigin :: WlrBox -> WlrBox
+toOrigin (WlrBox {boxWidth = width, boxHeight = height}) = WlrBox 0 0 width height
