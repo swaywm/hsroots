@@ -25,6 +25,14 @@ module Graphics.Wayland.WlRoots.Seat
     , WlrSeatClient
     , seatGetSignals
     , seatClientGetClient
+
+    , WlrSeatKeyboardState
+    , getKeyboardState
+    , getKeyboardFocus
+
+    , WlrSeatPointerState
+    , getPointerState
+    , getPointerFocus
     )
 where
 
@@ -166,3 +174,19 @@ seatGetSignals :: Ptr WlrSeat -> SeatSignals
 seatGetSignals ptr = SeatSignals
     { seatSignalSetCursor = #{ptr struct wlr_seat, events.request_set_cursor} ptr
     }
+
+data WlrSeatKeyboardState
+
+getKeyboardState :: Ptr WlrSeat -> Ptr WlrSeatKeyboardState
+getKeyboardState = #{ptr struct wlr_seat, keyboard_state}
+
+getKeyboardFocus :: Ptr WlrSeatKeyboardState -> IO (Ptr WlrSurface)
+getKeyboardFocus = #{peek struct wlr_seat_keyboard_state, focused_surface}
+
+data WlrSeatPointerState
+
+getPointerState :: Ptr WlrSeat -> Ptr WlrSeatPointerState
+getPointerState = #{ptr struct wlr_seat, pointer_state}
+
+getPointerFocus :: Ptr WlrSeatPointerState -> IO (Ptr WlrSurface)
+getPointerFocus = #{peek struct wlr_seat_pointer_state, focused_surface}
