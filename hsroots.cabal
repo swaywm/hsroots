@@ -75,7 +75,6 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Seat
   exposed-modules:     Graphics.Wayland.WlRoots.Shell
   exposed-modules:     Graphics.Wayland.WlRoots.Surface
-  exposed-modules:     Graphics.Wayland.WlRoots.Util.List
   exposed-modules:     Graphics.Wayland.WlRoots.XCursor
   exposed-modules:     Graphics.Wayland.WlRoots.XCursorManager
   exposed-modules:     Graphics.Wayland.WlRoots.XWayland
