@@ -1,5 +1,6 @@
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 module Graphics.Wayland.WlRoots.Surface
     ( WlrSurface
     , withSurfaceMatrix
@@ -25,17 +26,19 @@ module Graphics.Wayland.WlRoots.Surface
     , subSurfaceGetBox
 
     , getSurfaceResource
+    , subSurfaceAt
     )
 where
 
 #include <wlr/types/wlr_surface.h>
 
-import Data.Word (Word32)
-import Foreign.Storable (Storable(..))
-import Foreign.Ptr (Ptr, castPtr, plusPtr)
-import Foreign.C.Types (CFloat(..), CInt(..))
 import Data.Composition ((.:))
+import Data.Word (Word32)
 import Foreign.C.Error (throwErrnoIfNull)
+import Foreign.C.Types (CFloat(..), CInt(..))
+import Foreign.Ptr (Ptr, castPtr, plusPtr, nullPtr)
+import Foreign.Storable (Storable(..))
+import Foreign.Marshal.Alloc (alloca)
 
 import Graphics.Wayland.Resource (WlResource)
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..), withMatrix)
@@ -130,3 +133,19 @@ surfaceGetSubs surf = do
 
 subSurfaceGetBox :: Ptr WlrSubSurface -> IO WlrBox
 subSurfaceGetBox surf = stateGetSubsurfaceBox =<< getCurrentState =<< subSurfaceGetSurface surf
+
+--struct wlr_subsurface *wlr_surface_subsurface_at(struct wlr_surface *surface,
+--surfacedouble sx, double sy, double *sub_x, double *sub_y);
+
+foreign import ccall "wlr_surface_subsurface_at" c_subsurface_at :: Ptr WlrSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrSubSurface)
+
+subSurfaceAt :: Ptr WlrSurface -> Double -> Double -> IO (Maybe (Ptr WlrSurface, Double, Double))
+subSurfaceAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
+    ret <- c_subsurface_at surf x y xptr yptr
+    if ret == nullPtr
+        then pure Nothing
+        else do
+            sX <- peek xptr
+            sY <- peek yptr
+            retSurf <- subSurfaceGetSurface ret
+            pure $ Just (retSurf, x - sX, y - sY)
