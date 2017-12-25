@@ -75,7 +75,7 @@ data X11Surface
 
 xwaySurfaceGetSurface :: Ptr X11Surface -> IO (Maybe (Ptr WlrSurface))
 xwaySurfaceGetSurface ptr = do
-    ret <- #{peek struct wlr_xwayland_surface, surface}
+    ret <- #{peek struct wlr_xwayland_surface, surface} ptr
     pure $ if ret == nullPtr
         then Nothing
         else Just ret
