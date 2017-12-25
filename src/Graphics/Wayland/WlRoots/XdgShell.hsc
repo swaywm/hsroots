@@ -85,9 +85,12 @@ isXdgPopup surf = do
     role :: CInt <- #{peek struct wlr_xdg_surface_v6, role} surf
     pure (role == #{const WLR_XDG_SURFACE_V6_ROLE_POPUP})
 
-xdgSurfaceGetSurface :: Ptr WlrXdgSurface -> IO (Ptr WlrSurface)
-xdgSurfaceGetSurface =
-    #{peek struct wlr_xdg_surface_v6, surface}
+xdgSurfaceGetSurface :: Ptr WlrXdgSurface -> IO (Maybe (Ptr WlrSurface))
+xdgSurfaceGetSurface ptr = do
+    ret <- #{peek struct wlr_xdg_surface_v6, surface} ptr
+    pure $ if ret == nullPtr
+        then Nothing
+        else Just ret
 
 data MoveEvent = MoveEvent
     { moveEvtSurface :: Ptr WlrXdgSurface

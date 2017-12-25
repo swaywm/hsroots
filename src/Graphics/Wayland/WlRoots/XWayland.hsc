@@ -73,8 +73,12 @@ xwayBindNew shell handler = do
 
 data X11Surface
 
-xwaySurfaceGetSurface :: Ptr X11Surface -> IO (Ptr WlrSurface)
-xwaySurfaceGetSurface = #{peek struct wlr_xwayland_surface, surface}
+xwaySurfaceGetSurface :: Ptr X11Surface -> IO (Maybe (Ptr WlrSurface))
+xwaySurfaceGetSurface ptr = do
+    ret <- #{peek struct wlr_xwayland_surface, surface}
+    pure $ if ret == nullPtr
+        then Nothing
+        else Just ret
 
 foreign import ccall "wlr_xwayland_surface_close" c_close :: Ptr X11Surface -> IO ()
 
