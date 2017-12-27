@@ -27,6 +27,9 @@ module Graphics.Wayland.WlRoots.Surface
 
     , getSurfaceResource
     , subSurfaceAt
+
+    , WlrSurfaceEvents (..)
+    , getWlrSurfaceEvents
     )
 where
 
@@ -39,6 +42,8 @@ import Foreign.C.Types (CFloat(..), CInt(..))
 import Foreign.Ptr (Ptr, castPtr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 import Foreign.Marshal.Alloc (alloca)
+
+import Graphics.Wayland.Signal
 
 import Graphics.Wayland.Resource (WlResource)
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..), withMatrix)
@@ -68,6 +73,16 @@ withSurfaceMatrix ptr proj trans act = withMatrix $ \mat -> do
     getSurfaceMatrix ptr mat proj trans
     act mat
 
+data WlrSurfaceEvents = WlrSurfaceEvents
+    { wlrSurfaceEvtCommit  :: Ptr (WlSignal WlrSurface)
+    , wlrSurfaceEvtDestroy :: Ptr (WlSignal WlrSurface)
+    }
+
+getWlrSurfaceEvents :: Ptr WlrSurface -> WlrSurfaceEvents
+getWlrSurfaceEvents ptr = WlrSurfaceEvents
+    { wlrSurfaceEvtDestroy = #{ptr struct wlr_surface, events.destroy} ptr
+    , wlrSurfaceEvtCommit = #{ptr struct wlr_surface, events.commit} ptr
+    }
 
 foreign import ccall unsafe "wlr_surface_make_subsurface" c_make_subsurface :: Ptr WlrSurface -> Ptr WlrSurface -> Word32 -> IO ()
 
