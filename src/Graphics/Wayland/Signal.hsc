@@ -16,9 +16,10 @@ where
 -- We need the wl_lisener in scope
 #include <wayland-server.h>
 
+import Control.Monad (when)
 import Foreign.Storable (Storable(..))
 import Foreign.Marshal.Alloc (mallocBytes, free)
-import Foreign.Ptr (Ptr, FunPtr, plusPtr, freeHaskellFunPtr)
+import Foreign.Ptr (Ptr, FunPtr, plusPtr, freeHaskellFunPtr, nullPtr, castFunPtrToPtr)
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import Foreign.Concurrent (newForeignPtr)
 
@@ -38,7 +39,8 @@ freeWlListener ptr = do
     let link = #{ptr struct wl_listener, link} ptr
     c_list_remove link
     notify :: FunPtr (Ptr a -> IO ()) <- #{peek struct wl_listener, notify} ptr
-    freeHaskellFunPtr notify
+    when (castFunPtrToPtr notify /= nullPtr) $ freeHaskellFunPtr notify
+    #{poke struct wl_listener, notify} ptr nullPtr
     free ptr
 
 foreign import ccall "wrapper" mkCbFun :: (Ptr (WlListener a) -> Ptr a -> IO ()) -> IO (FunPtr (Ptr (WlListener a) -> Ptr a -> IO ()))
