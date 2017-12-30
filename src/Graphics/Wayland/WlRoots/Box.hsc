@@ -5,6 +5,8 @@ module Graphics.Wayland.WlRoots.Box
     , boxContainsPoint
     , centerBox
     , toOrigin
+    , shrink
+    , enlarge
     )
 where
 
@@ -58,3 +60,9 @@ centerBox (WlrBox _ _ innerW innerH) (WlrBox x y outerW outerH) =
 
 toOrigin :: WlrBox -> WlrBox
 toOrigin (WlrBox {boxWidth = width, boxHeight = height}) = WlrBox 0 0 width height
+
+shrink :: WlrBox -> WlrBox -> WlrBox
+shrink (WlrBox _ _ lw lh) (WlrBox _ _ rw rh) = WlrBox 0 0 (min lw rw) (min lh rh)
+
+enlarge :: WlrBox -> WlrBox -> WlrBox
+enlarge (WlrBox _ _ lw lh) (WlrBox _ _ rw rh) = WlrBox 0 0 (max lw rw) (max lh rh)
