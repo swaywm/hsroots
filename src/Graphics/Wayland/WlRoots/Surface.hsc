@@ -30,6 +30,10 @@ module Graphics.Wayland.WlRoots.Surface
 
     , WlrSurfaceEvents (..)
     , getWlrSurfaceEvents
+
+    , surfaceGetScale
+    , surfaceSendEnter
+    , surfaceSendLeave
     )
 where
 
@@ -45,12 +49,13 @@ import Foreign.Marshal.Alloc (alloca)
 
 import Graphics.Wayland.Signal
 
-import Graphics.Wayland.Resource (WlResource)
-import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..), withMatrix)
-import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
-import Graphics.Wayland.WlRoots.Box (WlrBox(..))
 import Graphics.Wayland.List (getListFromHead)
+import Graphics.Wayland.Resource (WlResource)
 import Graphics.Wayland.Server (Callback(..))
+import Graphics.Wayland.WlRoots.Box (WlrBox(..))
+import Graphics.Wayland.WlRoots.Output (WlrOutput)
+import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
+import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..), withMatrix)
 
 data WlrSurface
 
@@ -115,6 +120,12 @@ stateGetSubsurfaceBox state = do
         , boxWidth = fromIntegral width
         }
 
+stateGetScale :: Ptr WlrSurfaceState -> IO Word32
+stateGetScale = #{peek struct wlr_surface_state, scale}
+
+surfaceGetScale :: Ptr WlrSurface -> IO Word32
+surfaceGetScale surf = stateGetScale =<< getCurrentState surf
+
 data WlrFrameCallback
 
 callbackGetResource :: Ptr WlrFrameCallback -> IO (Ptr WlResource)
@@ -164,3 +175,13 @@ subSurfaceAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
             sY <- peek yptr
             retSurf <- subSurfaceGetSurface ret
             pure $ Just (retSurf, x - sX, y - sY)
+
+foreign import ccall "wlr_surface_send_enter" c_send_enter :: Ptr WlrSurface -> Ptr WlrOutput -> IO ()
+
+surfaceSendEnter :: Ptr WlrSurface -> Ptr WlrOutput -> IO ()
+surfaceSendEnter = c_send_enter
+
+foreign import ccall "wlr_surface_send_leave" c_send_leave :: Ptr WlrSurface -> Ptr WlrOutput -> IO ()
+
+surfaceSendLeave :: Ptr WlrSurface -> Ptr WlrOutput -> IO ()
+surfaceSendLeave = c_send_leave

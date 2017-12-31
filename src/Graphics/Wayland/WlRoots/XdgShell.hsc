@@ -191,7 +191,7 @@ data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
 getXdgSurfaceEvents :: Ptr WlrXdgSurface -> WlrXdgSurfaceEvents
 getXdgSurfaceEvents ptr = WlrXdgSurfaceEvents
     { xdgSurfaceEvtDestroy = #{ptr struct wlr_xdg_surface_v6, events.destroy} ptr
-    , xdgSurfaceEvtCommit = #{ptr struct wlr_xdg_surface_v6, events.commit} ptr
+    , xdgSurfaceEvtCommit = #{ptr struct wlr_xdg_surface_v6, events.destroy} ptr
     , xdgSurfaceEvtTimeout = #{ptr struct wlr_xdg_surface_v6, events.ping_timeout} ptr
 
     , xdgSurfaceEvtMaximize = #{ptr struct wlr_xdg_surface_v6, events.request_maximize} ptr

@@ -24,9 +24,11 @@ module Graphics.Wayland.WlRoots.Output
 
     , transformOutput
 
+    , getEffectiveBox
     , getOutputBox
     , getOutputName
     , getOutputScale
+    , setOutputScale
     )
 where
 
@@ -89,6 +91,11 @@ effectiveResolution output = alloca $ \width -> alloca $ \height -> do
     height_val <- peek height
     pure (fromIntegral width_val, fromIntegral height_val)
 
+getEffectiveBox :: Ptr WlrOutput -> IO WlrBox
+getEffectiveBox ptr = do
+    phys <- getOutputBox ptr
+    (width, height) <- effectiveResolution ptr
+    pure phys {boxWidth = width, boxHeight = height}
 
 foreign import ccall unsafe "wlr_output_set_transform" c_output_transform :: Ptr WlrOutput -> CInt -> IO ()
 
@@ -162,3 +169,8 @@ getOutputBox ptr = do
 
 getOutputScale :: Ptr WlrOutput -> IO Float
 getOutputScale = #{peek struct wlr_output, scale}
+
+foreign import ccall unsafe "wlr_output_set_scale" c_set_scale :: Ptr WlrOutput -> Float -> IO ()
+
+setOutputScale :: Ptr WlrOutput -> Float -> IO ()
+setOutputScale = c_set_scale
