@@ -27,6 +27,7 @@ module Graphics.Wayland.WlRoots.Output
     , getDataPtr
 
     , transformOutput
+    , getOutputTransform
 
     , getEffectiveBox
     , getOutputBox
@@ -108,6 +109,10 @@ transformOutput :: Ptr WlrOutput -> OutputTransform -> IO ()
 transformOutput ptr (OutputTransform x) =
     c_output_transform ptr (fromIntegral x)
 
+getOutputTransform :: Ptr WlrOutput -> IO OutputTransform
+getOutputTransform ptr = do
+    val :: CInt <- #{peek struct wlr_output, transform} ptr
+    pure $ OutputTransform (fromIntegral val)
 
 data OutputMode = OutputMode
     { modeFlags   :: Word32
