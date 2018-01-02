@@ -15,7 +15,11 @@ module Graphics.Wayland.WlRoots.Output
     , setOutputMode
 
     , getName
+    , hasModes
     , getModes
+    , getMode
+    , getWidth
+    , getHeight
     , getTransMatrix
 
     , OutputSignals(..)
@@ -35,20 +39,21 @@ where
 #include <wlr/types/wlr_output.h>
 
 import Data.ByteString.Unsafe (unsafePackCString)
+import Data.Int (Int32)
 import Data.Text (Text)
 import Data.Word (Word32)
 import Foreign.C.Error (throwErrnoIf_)
 import Foreign.C.String (peekCString)
 import Foreign.C.Types (CInt(..))
 import Foreign.Marshal.Alloc (alloca)
-import Foreign.Ptr (Ptr, plusPtr)
+import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Box (WlrBox(..))
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Server (OutputTransform(..))
-import Graphics.Wayland.List (getListFromHead)
+import Graphics.Wayland.List (getListFromHead, istListEmpty)
 
 import qualified Data.Text.Encoding as E
 
@@ -132,10 +137,26 @@ setOutputMode mptr ptr =
 getName :: Ptr WlrOutput -> IO String
 getName = peekCString . #{ptr struct wlr_output, name}
 
+getWidth :: Ptr WlrOutput -> IO Int32
+getWidth = #{peek struct wlr_output, width}
+
+getHeight :: Ptr WlrOutput -> IO Int32
+getHeight = #{peek struct wlr_output, height}
+
+hasModes :: Ptr WlrOutput -> IO Bool
+hasModes = fmap not . istListEmpty . #{ptr struct wlr_output, modes}
+
 getModes :: Ptr WlrOutput -> IO [Ptr OutputMode]
 getModes ptr = do
     let listptr = #{ptr struct wlr_output, modes} ptr
     getListFromHead listptr #{offset struct wlr_output_mode, link}
+
+getMode :: Ptr WlrOutput -> IO (Maybe (Ptr OutputMode))
+getMode ptr = do
+    ret <- #{peek struct wlr_output, current_mode} ptr
+    if ret == nullPtr
+        then pure Nothing
+        else pure $ Just ret
 
 getTransMatrix :: Ptr WlrOutput -> Matrix
 getTransMatrix = 
