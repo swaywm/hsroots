@@ -11,17 +11,21 @@ module Graphics.Wayland.WlRoots.Input
 
     , InputDevice
     , inputDeviceType
+    , getDestroySignal
     )
 where
 
 #include <wlr/types/wlr_input_device.h>
 
-import Foreign.Ptr (Ptr, castPtr)
+import Foreign.Ptr (Ptr, castPtr, plusPtr)
 import Foreign.C.Types (CInt)
 import Foreign.Storable (Storable(..))
+import Graphics.Wayland.Signal (WlSignal)
+
 import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard)
 import Graphics.Wayland.WlRoots.Input.Pointer (WlrPointer)
 import Graphics.Wayland.WlRoots.Input.Buttons
+
 
 data DeviceType
     = DeviceKeyboard (Ptr WlrKeyboard)
@@ -53,3 +57,6 @@ inputDeviceType ptr = do
     int :: CInt <- #{peek struct wlr_input_device, type} ptr
     devptr <- #{peek struct wlr_input_device, _device} ptr
     pure $ intToDeviceType int devptr
+
+getDestroySignal :: Ptr InputDevice -> Ptr (WlSignal (InputDevice))
+getDestroySignal = #{ptr struct wlr_input_device, events.destroy}

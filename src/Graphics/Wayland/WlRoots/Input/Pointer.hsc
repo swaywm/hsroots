@@ -24,12 +24,16 @@ import Data.Word (Word32, Word64)
 data PointerEvents = PointerEvents
     { pointerButton :: Ptr (WlSignal WlrEventPointerButton)
     , pointerMotion :: Ptr (WlSignal WlrEventPointerMotion)
+    , pointerMotionAbs :: Ptr (WlSignal WlrEventPointerAbsMotion)
+    , pointerAxis :: Ptr (WlSignal ())
     }
 
 pointerGetEvents :: Ptr WlrPointer -> PointerEvents
 pointerGetEvents ptr = PointerEvents
     { pointerButton = #{ptr struct wlr_pointer, events.button} ptr
     , pointerMotion = #{ptr struct wlr_pointer, events.motion} ptr
+    , pointerMotionAbs = #{ptr struct wlr_pointer, events.motion_absolute} ptr
+    , pointerAxis = #{ptr struct wlr_pointer, events.axis} ptr
     }
 
 data WlrPointer
@@ -47,7 +51,7 @@ instance Storable WlrEventPointerButton where
     peek ptr = do
         dev <- #{peek struct wlr_event_pointer_button, device} ptr
         button <- #{peek struct wlr_event_pointer_button, button} ptr
-        
+
         state :: CInt <- #{peek struct wlr_event_pointer_button, state} ptr
         tsec :: Word32 <- #{peek struct wlr_event_pointer_button, time_msec} ptr
 
