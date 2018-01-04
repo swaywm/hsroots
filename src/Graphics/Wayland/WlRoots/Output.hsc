@@ -14,7 +14,6 @@ module Graphics.Wayland.WlRoots.Output
     , OutputMode(..)
     , setOutputMode
 
-    , getName
     , hasModes
     , getModes
     , getMode
@@ -34,6 +33,10 @@ module Graphics.Wayland.WlRoots.Output
     , getOutputName
     , getOutputScale
     , setOutputScale
+
+    , getMake
+    , getModel
+    , getSerial
     )
 where
 
@@ -56,12 +59,26 @@ import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Server (OutputTransform(..))
 import Graphics.Wayland.List (getListFromHead, istListEmpty)
 
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 
 data WlrOutput
 
 getOutputName :: Ptr WlrOutput -> IO Text
 getOutputName = fmap E.decodeUtf8 . unsafePackCString . #{ptr struct wlr_output, name}
+
+makeMaybe :: Text -> Maybe Text
+makeMaybe txt = if T.null txt then Nothing else Just txt
+
+getMake :: Ptr WlrOutput -> IO (Maybe Text)
+getMake = fmap (makeMaybe . E.decodeUtf8) . unsafePackCString . #{ptr struct wlr_output, make}
+
+getModel :: Ptr WlrOutput -> IO (Maybe Text)
+getModel = fmap (makeMaybe . E.decodeUtf8) . unsafePackCString . #{ptr struct wlr_output, model}
+
+getSerial :: Ptr WlrOutput -> IO (Maybe Text)
+getSerial = fmap (makeMaybe . E.decodeUtf8) . unsafePackCString . #{ptr struct wlr_output, serial}
+
 
 foreign import ccall unsafe "wlr_output_enable" c_output_enable :: Ptr WlrOutput -> Bool -> IO ()
 
@@ -138,9 +155,6 @@ setOutputMode :: Ptr OutputMode -> Ptr WlrOutput -> IO ()
 setOutputMode mptr ptr = 
     throwErrnoIf_ not "setOutputMode" $ c_set_mode ptr mptr
 
-
-getName :: Ptr WlrOutput -> IO String
-getName = peekCString . #{ptr struct wlr_output, name}
 
 getWidth :: Ptr WlrOutput -> IO Int32
 getWidth = #{peek struct wlr_output, width}
