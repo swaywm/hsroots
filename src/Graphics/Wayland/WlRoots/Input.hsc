@@ -12,11 +12,14 @@ module Graphics.Wayland.WlRoots.Input
     , InputDevice
     , inputDeviceType
     , getDestroySignal
+    , getDeviceName
     )
 where
 
 #include <wlr/types/wlr_input_device.h>
 
+import Data.ByteString.Unsafe (unsafePackCString)
+import Data.Text (Text)
 import Foreign.Ptr (Ptr, castPtr, plusPtr)
 import Foreign.C.Types (CInt)
 import Foreign.Storable (Storable(..))
@@ -26,6 +29,7 @@ import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard)
 import Graphics.Wayland.WlRoots.Input.Pointer (WlrPointer)
 import Graphics.Wayland.WlRoots.Input.Buttons
 
+import qualified Data.Text.Encoding as E
 
 data DeviceType
     = DeviceKeyboard (Ptr WlrKeyboard)
@@ -60,3 +64,7 @@ inputDeviceType ptr = do
 
 getDestroySignal :: Ptr InputDevice -> Ptr (WlSignal (InputDevice))
 getDestroySignal = #{ptr struct wlr_input_device, events.destroy}
+
+getDeviceName :: Ptr InputDevice -> IO Text
+getDeviceName ptr =
+    fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_input_device, name} ptr
