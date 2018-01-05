@@ -36,23 +36,38 @@ import Foreign.Storable (Storable(..))
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.WlRoots.Box (WlrBox)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
-import Graphics.Wayland.WlRoots.Input.Pointer (WlrEventPointerButton, WlrEventPointerMotion, WlrEventPointerAbsMotion)
+import Graphics.Wayland.WlRoots.Input.Pointer
+    (WlrEventPointerButton, WlrEventPointerMotion, WlrEventPointerAbsMotion, WlrEventPointerAxis)
+import Graphics.Wayland.WlRoots.Input.TabletTool
+    (ToolAxisEvent, ToolProximityEvent, ToolTipEvent, ToolButtonEvent)
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.OutputLayout (WlrOutputLayout)
 import Graphics.Wayland.WlRoots.XCursor (WlrXCursor)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 
 data CursorEvents = CursorEvents
-    { cursorButton :: Ptr (WlSignal WlrEventPointerButton)
-    , cursorMotion :: Ptr (WlSignal WlrEventPointerMotion)
+    { cursorButton    :: Ptr (WlSignal WlrEventPointerButton)
+    , cursorMotion    :: Ptr (WlSignal WlrEventPointerMotion)
     , cursorMotionAbs :: Ptr (WlSignal WlrEventPointerAbsMotion)
+    , cursorAxis      :: Ptr (WlSignal WlrEventPointerAxis)
+
+    , cursorToolAxis       :: Ptr (WlSignal ToolAxisEvent)
+    , cursorToolProximity  :: Ptr (WlSignal ToolProximityEvent)
+    , cursorToolTip        :: Ptr (WlSignal ToolTipEvent)
+    , cursorToolButton     :: Ptr (WlSignal ToolButtonEvent)
     }
 
 cursorGetEvents :: Ptr WlrCursor -> CursorEvents
 cursorGetEvents ptr = CursorEvents
-    { cursorButton = #{ptr struct wlr_cursor, events.button} ptr
-    , cursorMotion = #{ptr struct wlr_cursor, events.motion} ptr
+    { cursorButton    = #{ptr struct wlr_cursor, events.button} ptr
+    , cursorMotion    = #{ptr struct wlr_cursor, events.motion} ptr
     , cursorMotionAbs = #{ptr struct wlr_cursor, events.motion_absolute} ptr
+    , cursorAxis = #{ptr struct wlr_cursor, events.axis} ptr
+
+    , cursorToolAxis       = #{ptr struct wlr_cursor, events.tablet_tool_axis} ptr
+    , cursorToolProximity  = #{ptr struct wlr_cursor, events.tablet_tool_proximity} ptr
+    , cursorToolTip        = #{ptr struct wlr_cursor, events.tablet_tool_tip} ptr
+    , cursorToolButton     = #{ptr struct wlr_cursor, events.tablet_tool_button} ptr
     }
 
 data WlrCursor

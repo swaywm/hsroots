@@ -24,6 +24,7 @@ import Foreign.Storable
 
 import Graphics.Wayland.Signal (WlSignal)
 
+-- import {-# SOURCE #-} Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Buttons
 
 data WlrTabletPad

@@ -15,6 +15,8 @@ module Graphics.Wayland.WlRoots.Input.TabletTool
 
     , TipState (..)
     , ToolTipEvent (..)
+
+    , ToolButtonEvent (..)
     )
 where
 
@@ -29,13 +31,16 @@ import Foreign.Storable
 
 import Graphics.Wayland.Signal (WlSignal)
 
+import {-# SOURCE #-} Graphics.Wayland.WlRoots.Input (InputDevice)
+import Graphics.Wayland.WlRoots.Input.Buttons (ButtonState)
+
 data WlrTabletTool
 
 data ToolEvents = ToolEvents
-    { toolEventAxis      :: Ptr (WlSignal ())
-    , toolEventProximity :: Ptr (WlSignal ())
-    , toolEventTip       :: Ptr (WlSignal ())
-    , toolEventButton    :: Ptr (WlSignal ())
+    { toolEventAxis      :: Ptr (WlSignal ToolAxisEvent)
+    , toolEventProximity :: Ptr (WlSignal ToolProximityEvent)
+    , toolEventTip       :: Ptr (WlSignal ToolTipEvent)
+    , toolEventButton    :: Ptr (WlSignal ToolButtonEvent)
     }
 
 
@@ -103,7 +108,7 @@ readToolAxis _ _ = Nothing
 data ToolAxisEvent = ToolAxisEvent
     { toolAxisEvtTime   :: Word32
     , toolAxisEvtAxes   :: [ToolAxis]
-    , toolAxisEvtDevice :: Ptr ()
+    , toolAxisEvtDevice :: Ptr InputDevice
     }
 
 instance Storable ToolAxisEvent where
@@ -143,7 +148,7 @@ instance Storable ProximityState where
     poke ptr val = poke (castPtr ptr) (proximityStateToInt val :: CInt)
 
 data ToolProximityEvent = ToolProximityEvent
-    { toolProximityEvtDevice :: Ptr ()
+    { toolProximityEvtDevice :: Ptr InputDevice
     , toolProximityEvtTime   :: Word32
     , toolProximityEvtX      :: Double
     , toolProximityEvtY      :: Double
@@ -187,15 +192,8 @@ instance Storable TipState where
     poke ptr val = poke (castPtr ptr) (tipStateToInt val :: CInt)
 
 
---struct wlr_event_tablet_tool_tip {
---    struct wlr_input_device *device;
---    uint32_t time_msec;
---    double x_mm, y_mm;
---    double width_mm, height_mm;
---    enum wlr_tablet_tool_tip_state state;
---                                 };
 data ToolTipEvent = ToolTipEvent
-    { toolTipEvtDevice :: Ptr ()
+    { toolTipEvtDevice :: Ptr InputDevice
     , toolTipEvtTime   :: Word32
     , toolTipEvtX      :: Double
     , toolTipEvtY      :: Double
@@ -217,3 +215,23 @@ instance Storable ToolTipEvent where
         <*> #{peek struct wlr_event_tablet_tool_tip, state} ptr
     poke _ _ = error "We don't poke ToolTipEvents for now"
 
+data ToolButtonEvent = ToolButtonEvent
+    { toolButtonEvtDevice :: Ptr InputDevice
+    , toolButtonEvtTime   :: Word32
+    , toolButtonEvtButton :: Word32
+    , toolButtonEvtState  :: ButtonState
+    }
+
+instance Storable ToolButtonEvent where
+    sizeOf _ = #{size struct wlr_event_tablet_tool_button}
+    alignment _ = #{alignment struct wlr_event_tablet_tool_button}
+    peek ptr = ToolButtonEvent
+        <$> #{peek struct wlr_event_tablet_tool_button, device} ptr
+        <*> #{peek struct wlr_event_tablet_tool_button, time_msec} ptr
+        <*> #{peek struct wlr_event_tablet_tool_button, button} ptr
+        <*> #{peek struct wlr_event_tablet_tool_button, state} ptr
+    poke ptr evt = do
+        #{poke struct wlr_event_tablet_tool_button, device} ptr $    toolButtonEvtDevice evt
+        #{poke struct wlr_event_tablet_tool_button, time_msec} ptr $ toolButtonEvtTime   evt
+        #{poke struct wlr_event_tablet_tool_button, button} ptr $    toolButtonEvtButton evt
+        #{poke struct wlr_event_tablet_tool_button, state} ptr $     toolButtonEvtState  evt

@@ -8,6 +8,10 @@ module Graphics.Wayland.WlRoots.Input.Pointer
     , PointerEvents (..)
     , WlrEventPointerMotion (..)
     , WlrEventPointerAbsMotion (..)
+
+    , AxisSource (..)
+    , AxisOrientation (..)
+    , WlrEventPointerAxis (..)
     )
 where
 
@@ -15,7 +19,7 @@ where
 
 import Foreign.Storable (Storable(..))
 import Foreign.C.Types (CInt(..))
-import Foreign.Ptr (Ptr, plusPtr)
+import Foreign.Ptr (Ptr, plusPtr, castPtr)
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.WlRoots.Input.Buttons
 import {-# SOURCE #-} Graphics.Wayland.WlRoots.Input (InputDevice)
@@ -25,7 +29,7 @@ data PointerEvents = PointerEvents
     { pointerButton :: Ptr (WlSignal WlrEventPointerButton)
     , pointerMotion :: Ptr (WlSignal WlrEventPointerMotion)
     , pointerMotionAbs :: Ptr (WlSignal WlrEventPointerAbsMotion)
-    , pointerAxis :: Ptr (WlSignal ())
+    , pointerAxis :: Ptr (WlSignal WlrEventPointerAxis)
     }
 
 pointerGetEvents :: Ptr WlrPointer -> PointerEvents
@@ -40,7 +44,7 @@ data WlrPointer
 
 data WlrEventPointerButton = WlrEventPointerButton
     { eventPointerButtonDevice :: Ptr InputDevice
-    , eventPointerButtonTime :: Integer
+    , eventPointerButtonTime :: Word32
     , eventPointerButtonButton :: Word32
     , eventPointerButtonState :: ButtonState
     } deriving (Show, Eq)
@@ -70,7 +74,7 @@ instance Storable WlrEventPointerButton where
 
 data WlrEventPointerMotion = WlrEventPointerMotion
     { eventPointerMotionDevice :: Ptr InputDevice
-    , eventPointerMotionTime :: Integer
+    , eventPointerMotionTime :: Word32
     , eventPointerMotionDeltaX :: Double
     , eventPointerMotionDeltaY :: Double
     } deriving (Show, Eq)
@@ -100,7 +104,7 @@ instance Storable WlrEventPointerMotion where
 
 data WlrEventPointerAbsMotion = WlrEventPointerAbsMotion
     { eventPointerAbsMotionDevice :: Ptr InputDevice
-    , eventPointerAbsMotionTime :: Integer
+    , eventPointerAbsMotionTime :: Word32
     , eventPointerAbsMotionX :: Double
     , eventPointerAbsMotionY :: Double
 
@@ -138,3 +142,78 @@ instance Storable WlrEventPointerAbsMotion where
 
         #{poke struct wlr_event_pointer_motion_absolute, width_mm} ptr $ eventPointerAbsMotionWidth event
         #{poke struct wlr_event_pointer_motion_absolute, height_mm} ptr $ eventPointerAbsMotionHeight event
+
+
+
+data AxisSource
+    = AxisWheel
+    | AxisFinger
+    | AxisContinuous
+    | AxisWheelTilt
+    deriving (Show, Eq, Read)
+
+axisSToInt :: Num a => AxisSource -> a
+axisSToInt AxisWheel      = #{const WLR_AXIS_SOURCE_WHEEL}
+axisSToInt AxisFinger     = #{const WLR_AXIS_SOURCE_FINGER}
+axisSToInt AxisContinuous = #{const WLR_AXIS_SOURCE_CONTINUOUS}
+axisSToInt AxisWheelTilt  = #{const WLR_AXIS_SOURCE_WHEEL_TILT}
+
+intToAxisS :: (Eq a, Num a, Show a) => a -> AxisSource
+intToAxisS #{const WLR_AXIS_SOURCE_WHEEL}      = AxisWheel
+intToAxisS #{const WLR_AXIS_SOURCE_FINGER}     = AxisFinger
+intToAxisS #{const WLR_AXIS_SOURCE_CONTINUOUS}  = AxisContinuous
+intToAxisS #{const WLR_AXIS_SOURCE_WHEEL_TILT} = AxisWheelTilt
+intToAxisS x = error $ "Got an an unknown PadRingSource: " ++ show x
+
+instance Storable AxisSource where
+    sizeOf _ = #{size int}
+    alignment _ = #{alignment int}
+    peek = fmap (intToAxisS :: CInt -> AxisSource) . peek . castPtr
+    poke ptr val = poke (castPtr ptr) (axisSToInt val :: CInt)
+
+
+data AxisOrientation
+    = AxisVertical
+    | AxisHorizontal
+    deriving (Show, Eq, Read)
+
+axisOToInt :: Num a => AxisOrientation -> a
+axisOToInt AxisVertical   = #{const WLR_AXIS_ORIENTATION_VERTICAL}
+axisOToInt AxisHorizontal = #{const WLR_AXIS_ORIENTATION_HORIZONTAL}
+
+intToAxisO :: (Eq a, Num a, Show a) => a -> AxisOrientation
+intToAxisO #{const WLR_AXIS_ORIENTATION_VERTICAL}   = AxisVertical
+intToAxisO #{const WLR_AXIS_ORIENTATION_HORIZONTAL} = AxisHorizontal
+intToAxisO x = error $ "Got an an unknown PadRingSource: " ++ show x
+
+instance Storable AxisOrientation where
+    sizeOf _ = #{size int}
+    alignment _ = #{alignment int}
+    peek = fmap (intToAxisO :: CInt -> AxisOrientation) . peek . castPtr
+    poke ptr val = poke (castPtr ptr) (axisOToInt val :: CInt)
+
+data WlrEventPointerAxis = WlrEventPointerAxis
+    { eventPointerAxisDevice      :: Ptr InputDevice
+    , eventPointerAxisTime        :: Word32
+    , eventPointerAxisSource      :: AxisSource
+    , eventPointerAxisOrientation :: AxisOrientation
+    , eventPointerAxisDelta       :: Double
+    } deriving (Show, Eq)
+
+
+
+instance Storable WlrEventPointerAxis where
+    sizeOf _ = #{size struct wlr_event_pointer_axis}
+    alignment _ = #{alignment struct wlr_event_pointer_axis}
+    peek ptr = WlrEventPointerAxis
+        <$> #{peek struct wlr_event_pointer_axis, device} ptr
+        <*> #{peek struct wlr_event_pointer_axis, time_msec} ptr
+        <*> #{peek struct wlr_event_pointer_axis, source} ptr
+        <*> #{peek struct wlr_event_pointer_axis, orientation} ptr
+        <*> #{peek struct wlr_event_pointer_axis, delta} ptr
+    poke ptr event = do
+        #{poke struct wlr_event_pointer_axis, device} ptr      $ eventPointerAxisDevice      event
+        #{poke struct wlr_event_pointer_axis, time_msec} ptr   $ eventPointerAxisTime        event
+        #{poke struct wlr_event_pointer_axis, source} ptr      $ eventPointerAxisSource      event
+        #{poke struct wlr_event_pointer_axis, orientation} ptr $ eventPointerAxisOrientation event
+        #{poke struct wlr_event_pointer_axis, delta} ptr       $ eventPointerAxisDelta       event
