@@ -27,6 +27,8 @@ import Graphics.Wayland.Signal (WlSignal)
 
 import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard)
 import Graphics.Wayland.WlRoots.Input.Pointer (WlrPointer)
+import Graphics.Wayland.WlRoots.Input.TabletPad (WlrTabletPad)
+import Graphics.Wayland.WlRoots.Input.TabletTool (WlrTabletTool)
 import Graphics.Wayland.WlRoots.Input.Buttons
 
 import qualified Data.Text.Encoding as E
@@ -35,8 +37,8 @@ data DeviceType
     = DeviceKeyboard (Ptr WlrKeyboard)
     | DevicePointer (Ptr WlrPointer)
     | DeviceTouch (Ptr ())
-    | DeviceTabletTool (Ptr ())
-    | DeviceTabletPad (Ptr ())
+    | DeviceTabletTool (Ptr WlrTabletTool)
+    | DeviceTabletPad (Ptr WlrTabletPad)
     deriving (Eq, Show)
 
 deviceTypeToInt :: Num a => DeviceType -> a
