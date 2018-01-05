@@ -12,6 +12,7 @@ module Graphics.Wayland.WlRoots.Input.Pointer
     , AxisSource (..)
     , AxisOrientation (..)
     , WlrEventPointerAxis (..)
+    , axisOToInt
     )
 where
 

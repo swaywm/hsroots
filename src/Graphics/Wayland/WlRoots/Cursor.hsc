@@ -30,6 +30,7 @@ where
 
 import Data.Word (Word32)
 import Data.Int (Int32)
+import Data.Maybe (fromMaybe)
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Foreign.Ptr (Ptr, nullPtr, plusPtr)
 import Foreign.Storable (Storable(..))
@@ -106,9 +107,10 @@ warpCursor cursor (Just dev) x y = c_cursor_warp cursor dev x y
 
 foreign import ccall "wlr_cursor_warp_absolute" c_cursor_warp_abs :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> IO ()
 
-warpCursorAbs :: Ptr WlrCursor -> Maybe (Ptr InputDevice) -> Double -> Double -> IO ()
+warpCursorAbs :: Ptr WlrCursor -> Maybe (Ptr InputDevice) -> Maybe Double -> Maybe Double -> IO ()
 warpCursorAbs cursor Nothing x y = warpCursorAbs cursor (Just nullPtr) x y
-warpCursorAbs cursor (Just dev) x y = c_cursor_warp_abs cursor dev x y
+warpCursorAbs cursor (Just dev) x y =
+    c_cursor_warp_abs cursor dev (fromMaybe (-1) x) (fromMaybe (-1) y)
 
 
 foreign import ccall "wlr_cursor_move" c_cursor_move :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> IO ()

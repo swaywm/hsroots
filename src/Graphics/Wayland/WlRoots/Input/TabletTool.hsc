@@ -15,6 +15,7 @@ module Graphics.Wayland.WlRoots.Input.TabletTool
 
     , TipState (..)
     , ToolTipEvent (..)
+    , tipStateToButtonState
 
     , ToolButtonEvent (..)
     )
@@ -32,7 +33,7 @@ import Foreign.Storable
 import Graphics.Wayland.Signal (WlSignal)
 
 import {-# SOURCE #-} Graphics.Wayland.WlRoots.Input (InputDevice)
-import Graphics.Wayland.WlRoots.Input.Buttons (ButtonState)
+import Graphics.Wayland.WlRoots.Input.Buttons (ButtonState, intToButtonState)
 
 data WlrTabletTool
 
@@ -185,6 +186,9 @@ intToTipState #{const WLR_TABLET_TOOL_TIP_UP} = TipUp
 intToTipState #{const WLR_TABLET_TOOL_TIP_DOWN} = TipDown
 intToTipState x = error $ "Got an an unknown PadRingSource: " ++ show x
 
+tipStateToButtonState :: TipState -> ButtonState
+tipStateToButtonState state = intToButtonState (tipStateToInt state :: Int)
+
 instance Storable TipState where
     sizeOf _ = #{size int}
     alignment _ = #{alignment int}
@@ -199,7 +203,7 @@ data ToolTipEvent = ToolTipEvent
     , toolTipEvtY      :: Double
     , toolTipEvtWidth  :: Double
     , toolTipEvtHeight :: Double
-    , toolTipEvtState  :: ProximityState
+    , toolTipEvtState  :: TipState
     }
 
 instance Storable ToolTipEvent where

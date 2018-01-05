@@ -12,6 +12,7 @@ module Graphics.Wayland.WlRoots.Seat
 
     , pointerClearFocus
     , pointerNotifyButton
+    , pointerNotifyAxis
 
     , keyboardNotifyKey
     , keyboardNotifyModifiers
@@ -50,6 +51,7 @@ import Graphics.Wayland.Server (DisplayServer(..), Client (..), SeatCapability(.
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Buttons
+import Graphics.Wayland.WlRoots.Input.Pointer (axisOToInt, AxisOrientation)
 import Graphics.Wayland.WlRoots.Input.Keyboard (KeyState(..), keyStateToInt)
 
 import Graphics.Wayland.Signal (WlSignal)
@@ -116,6 +118,11 @@ pointerNotifyButton :: Ptr WlrSeat -> Word32 -> Word32 -> ButtonState -> IO ()
 pointerNotifyButton seat time button state =
     c_notify_button seat time button (buttonStateToInt state)
 
+foreign import ccall unsafe "wlr_seat_pointer_notify_axis" c_pointer_notify_axis :: Ptr WlrSeat -> Word32 -> CInt -> Double -> IO ()
+
+pointerNotifyAxis :: Ptr WlrSeat -> Word32 -> AxisOrientation -> Double -> IO ()
+pointerNotifyAxis seat time orientation value =
+    c_pointer_notify_axis seat time (axisOToInt orientation) value
 
 foreign import ccall "wlr_seat_keyboard_notify_key" c_notify_key :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> IO ()
 
@@ -190,3 +197,5 @@ getPointerState = #{ptr struct wlr_seat, pointer_state}
 
 getPointerFocus :: Ptr WlrSeatPointerState -> IO (Ptr WlrSurface)
 getPointerFocus = #{peek struct wlr_seat_pointer_state, focused_surface}
+
+
