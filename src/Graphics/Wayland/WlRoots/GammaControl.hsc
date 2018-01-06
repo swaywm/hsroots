@@ -21,7 +21,7 @@ foreign import ccall "wlr_gamma_control_manager_create" c_create :: Ptr DisplayS
 createGammaManager :: DisplayServer -> IO (Ptr WlrGammaManager)
 createGammaManager (DisplayServer ptr) = c_create ptr
 
-foreign import ccall "wlr_gamma_control_manager_create" c_destroy :: Ptr WlrGammaManager -> IO ()
+foreign import ccall "wlr_gamma_control_manager_destroy" c_destroy :: Ptr WlrGammaManager -> IO ()
 
 destroyGammaManager :: Ptr WlrGammaManager -> IO ()
 destroyGammaManager = c_destroy
