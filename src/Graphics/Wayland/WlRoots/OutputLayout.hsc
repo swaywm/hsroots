@@ -30,11 +30,12 @@ import Foreign.Ptr (Ptr, nullPtr, plusPtr)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CInt(..))
 import Foreign.Marshal.Alloc (alloca)
+import Foreign.Marshal.Utils (with)
 import Foreign.Storable (Storable(peek, peekByteOff))
 import Data.Composition ((.:))
 
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
-import Graphics.Wayland.WlRoots.Box (Point(..))
+import Graphics.Wayland.WlRoots.Box (WlrBox, Point(..))
 import Graphics.Wayland.List (getListFromHead)
 
 data WlrOutputLayout
@@ -110,10 +111,10 @@ outputContainsPoint :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Int -> Int -> IO 
 outputContainsPoint layout output x y = c_contains_point layout output (fromIntegral x) (fromIntegral y)
 
 
-foreign import ccall "wlr_output_layout_intersects" c_intersects :: Ptr WlrOutputLayout -> Ptr WlrOutput -> CInt -> CInt -> CInt -> CInt -> IO Bool
+foreign import ccall "wlr_output_layout_intersects" c_intersects :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Ptr WlrBox -> IO Bool
 
-outputIntersects :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Int -> Int -> Int -> Int -> IO Bool
-outputIntersects layout output x1 y1 x2 y2 = c_intersects layout output (fromIntegral x1) (fromIntegral y1) (fromIntegral x2) (fromIntegral y2)
+outputIntersects :: Ptr WlrOutputLayout -> Ptr WlrOutput -> WlrBox -> IO Bool
+outputIntersects layout output box = with box $ c_intersects layout output
 
 
 foreign import ccall "wlr_output_layout_closest_point" c_closest_point :: Ptr WlrOutputLayout -> Ptr WlrOutput -> Double -> Double -> Ptr Double -> Ptr Double -> IO ()
