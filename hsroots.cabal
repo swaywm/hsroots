@@ -49,6 +49,7 @@ cabal-version:       >=1.10
 library
   -- Modules exported by the library.
   exposed-modules:     Graphics.Egl
+  exposed-modules:     Graphics.Wayland.Global
   exposed-modules:     Graphics.Wayland.List
   exposed-modules:     Graphics.Wayland.Resource
   exposed-modules:     Graphics.Wayland.Server.Client
@@ -61,6 +62,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Cursor
   exposed-modules:     Graphics.Wayland.WlRoots.DeviceManager
   exposed-modules:     Graphics.Wayland.WlRoots.Egl
+  exposed-modules:     Graphics.Wayland.WlRoots.GammaControl
   exposed-modules:     Graphics.Wayland.WlRoots.Input
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Buttons
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Keyboard
