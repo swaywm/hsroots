@@ -110,7 +110,7 @@ data ToolAxisEvent = ToolAxisEvent
     { toolAxisEvtTime   :: Word32
     , toolAxisEvtAxes   :: [ToolAxis]
     , toolAxisEvtDevice :: Ptr InputDevice
-    }
+    } deriving (Show)
 
 instance Storable ToolAxisEvent where
     sizeOf _ = #{size struct wlr_event_tablet_tool_axis}
@@ -156,7 +156,7 @@ data ToolProximityEvent = ToolProximityEvent
     , toolProximityEvtWidth  :: Double
     , toolProximityEvtHeight :: Double
     , toolProximityEvtState  :: ProximityState
-    }
+    } deriving (Show)
 
 instance Storable ToolProximityEvent where
     sizeOf _ = #{size struct wlr_event_tablet_tool_proximity}
@@ -204,7 +204,7 @@ data ToolTipEvent = ToolTipEvent
     , toolTipEvtWidth  :: Double
     , toolTipEvtHeight :: Double
     , toolTipEvtState  :: TipState
-    }
+    } deriving (Show)
 
 instance Storable ToolTipEvent where
     sizeOf _ = #{size struct wlr_event_tablet_tool_tip}
@@ -224,7 +224,7 @@ data ToolButtonEvent = ToolButtonEvent
     , toolButtonEvtTime   :: Word32
     , toolButtonEvtButton :: Word32
     , toolButtonEvtState  :: ButtonState
-    }
+    } deriving (Show)
 
 instance Storable ToolButtonEvent where
     sizeOf _ = #{size struct wlr_event_tablet_tool_button}

@@ -53,7 +53,7 @@ data PadButtonEvent = PadButtonEvent
     { padButtonEvtTime   :: Word32
     , padButtonEvtButton :: Word32
     , padButtonEvtState  :: ButtonState
-    }
+    } deriving (Show)
 
 instance Storable PadButtonEvent where
     sizeOf _ = #{size struct wlr_event_tablet_pad_button}
@@ -92,7 +92,7 @@ data PadRingEvent = PadRingEvent
     , padRingEvtSource   :: PadRingSource
     , padRingEvtRing     :: Word32
     , padRingEvtPosition :: Double
-    }
+    } deriving (Show)
 
 instance Storable PadRingEvent where
     sizeOf _ = #{size struct wlr_event_tablet_pad_ring}
@@ -133,7 +133,7 @@ data PadStripEvent = PadStripEvent
     , padStripEvtSource   :: PadStripSource
     , padStripEvtStrip    :: Word32
     , padStripEvtPosition :: Double
-    }
+    } deriving (Show)
 
 instance Storable PadStripEvent where
     sizeOf _ = #{size struct wlr_event_tablet_pad_strip}
