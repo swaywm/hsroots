@@ -31,29 +31,23 @@ where
 #include <wlr/xwayland.h>
 
 
-import Data.ByteString.Unsafe (unsafePackCString)
-import Data.Text (Text)
-import System.IO
-import Data.Word (Word16, Word32)
 import Data.Int (Int16)
+import Data.Text (Text)
+import Data.Word (Word16, Word32)
 import Data.Word (Word8)
-import Foreign.Storable (Storable(..))
 import Foreign.C.Error (throwErrnoIfNull)
-import Foreign.StablePtr
-    ( newStablePtr
-    , castStablePtrToPtr
-    )
-import Graphics.Wayland.Signal
 import Foreign.Ptr (Ptr, plusPtr, nullPtr)
+import Foreign.StablePtr (newStablePtr , castStablePtrToPtr)
 import Foreign.Storable (Storable(..))
+
 import Graphics.Wayland.List (getListFromHead)
 import Graphics.Wayland.Resource (getUserData)
 import Graphics.Wayland.Server (DisplayServer (..))
+import Graphics.Wayland.Signal
+import Graphics.Wayland.WlRoots.Box (Point(..), WlrBox(..))
 import Graphics.Wayland.WlRoots.Compositor (WlrCompositor)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
-import Graphics.Wayland.WlRoots.Box (Point(..), WlrBox(..))
-
-import qualified Data.Text.Encoding as E
+import Utility (textFromNull)
 
 data XWayland
 
@@ -212,8 +206,8 @@ x11SurfaceOverrideRedirect ptr = do
     val :: Word8 <- #{peek struct wlr_xwayland_surface, override_redirect} ptr
     pure $ val /= 0
 
-getTitle :: Ptr X11Surface -> IO Text
-getTitle ptr = fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_xwayland_surface, title} ptr
+getTitle :: Ptr X11Surface -> IO (Maybe Text)
+getTitle ptr = textFromNull =<< #{peek struct wlr_xwayland_surface, title} ptr
 
-getClass :: Ptr X11Surface -> IO Text
-getClass ptr = fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_xwayland_surface, class} ptr
+getClass :: Ptr X11Surface -> IO (Maybe Text)
+getClass ptr = textFromNull =<< #{peek struct wlr_xwayland_surface, class} ptr
