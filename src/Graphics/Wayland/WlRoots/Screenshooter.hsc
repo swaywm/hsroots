@@ -2,12 +2,17 @@ module Graphics.Wayland.WlRoots.Screenshooter
     ( WlrScreenshooter
     , screenshooterCreate
     , screenshooterDestroy
+    , getScreenshooterGlobal
     )
 where
 
+#include <wlr/types/wlr_screenshooter.h>
+
 import Foreign.Ptr (Ptr)
+import Foreign.Storable (Storable (..))
 
 import Graphics.Wayland.Server (DisplayServer(..))
+import Graphics.Wayland.Global (WlGlobal)
 
 import Graphics.Wayland.WlRoots.Render (Renderer)
 
@@ -22,3 +27,6 @@ foreign import ccall "wlr_screenshooter_destroy" c_destroy :: Ptr WlrScreenshoot
 
 screenshooterDestroy :: Ptr WlrScreenshooter -> IO ()
 screenshooterDestroy = c_destroy
+
+getScreenshooterGlobal :: Ptr WlrScreenshooter -> IO (Ptr WlGlobal)
+getScreenshooterGlobal = #{peek struct wlr_screenshooter, wl_global}
