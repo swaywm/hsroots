@@ -113,7 +113,7 @@ stateGetSubsurfaceBox state = do
     y :: Word32 <- #{peek struct wlr_surface_state, subsurface_position.y} state
 
     width :: CInt <- #{peek struct wlr_surface_state, width} state
-    height :: CInt <- #{peek struct wlr_surface_state, width} state
+    height :: CInt <- #{peek struct wlr_surface_state, height} state
 
     pure WlrBox
         { boxX = fromIntegral x
