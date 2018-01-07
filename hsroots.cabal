@@ -49,6 +49,7 @@ cabal-version:       >=1.10
 library
   -- Modules exported by the library.
   exposed-modules:     Graphics.Egl
+  exposed-modules:     Graphics.Pixman
   exposed-modules:     Graphics.Wayland.Global
   exposed-modules:     Graphics.Wayland.List
   exposed-modules:     Graphics.Wayland.Resource

@@ -24,6 +24,7 @@ module Graphics.Wayland.WlRoots.Surface
     , subSurfaceGetSurface
     , surfaceGetSubs
     , subSurfaceGetBox
+    , surfaceGetInputRegion
 
     , getSurfaceResource
     , subSurfaceAt
@@ -47,6 +48,7 @@ import Foreign.Ptr (Ptr, castPtr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 import Foreign.Marshal.Alloc (alloca)
 
+import Graphics.Pixman (PixmanRegion32)
 import Graphics.Wayland.Signal
 
 import Graphics.Wayland.List (getListFromHead)
@@ -125,6 +127,12 @@ stateGetScale = #{peek struct wlr_surface_state, scale}
 
 surfaceGetScale :: Ptr WlrSurface -> IO Word32
 surfaceGetScale surf = stateGetScale =<< getCurrentState surf
+
+stateGetInputRegion :: Ptr WlrSurfaceState -> Ptr PixmanRegion32
+stateGetInputRegion = #{ptr struct wlr_surface_state, input}
+
+surfaceGetInputRegion :: Ptr WlrSurface -> IO (Ptr PixmanRegion32)
+surfaceGetInputRegion = fmap stateGetInputRegion . getCurrentState
 
 data WlrFrameCallback
 
