@@ -37,6 +37,9 @@ module Graphics.Wayland.WlRoots.Output
     , getMake
     , getModel
     , getSerial
+
+    , getOutputNeedsSwap
+    , setOutputNeedsSwap
     )
 where
 
@@ -214,3 +217,9 @@ foreign import ccall unsafe "wlr_output_set_scale" c_set_scale :: Ptr WlrOutput 
 
 setOutputScale :: Ptr WlrOutput -> Float -> IO ()
 setOutputScale = c_set_scale
+
+getOutputNeedsSwap :: Ptr WlrOutput -> IO Bool
+getOutputNeedsSwap = #{peek struct wlr_output, needs_swap}
+
+setOutputNeedsSwap :: Ptr WlrOutput -> Bool -> IO ()
+setOutputNeedsSwap = #{poke struct wlr_output, needs_swap}

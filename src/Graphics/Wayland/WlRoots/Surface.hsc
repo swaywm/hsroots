@@ -28,6 +28,7 @@ module Graphics.Wayland.WlRoots.Surface
 
     , getSurfaceResource
     , subSurfaceAt
+    , surfaceHasDamage
 
     , WlrSurfaceEvents (..)
     , getWlrSurfaceEvents
@@ -48,7 +49,7 @@ import Foreign.Ptr (Ptr, castPtr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 import Foreign.Marshal.Alloc (alloca)
 
-import Graphics.Pixman (PixmanRegion32)
+import Graphics.Pixman (PixmanRegion32, pixmanRegionNotEmpty)
 import Graphics.Wayland.Signal
 
 import Graphics.Wayland.List (getListFromHead)
@@ -154,6 +155,11 @@ getPendingState = #{peek struct wlr_surface, pending}
 getCurrentState :: Ptr WlrSurface -> IO (Ptr WlrSurfaceState)
 getCurrentState = #{peek struct wlr_surface, current}
 
+stateHasDamage :: Ptr WlrSurfaceState -> IO Bool
+stateHasDamage ptr = pixmanRegionNotEmpty $ #{ptr struct wlr_surface_state, surface_damage} ptr
+
+surfaceHasDamage :: Ptr WlrSurface -> IO Bool
+surfaceHasDamage surf = stateHasDamage =<< getCurrentState surf
 
 data WlrSubSurface
 

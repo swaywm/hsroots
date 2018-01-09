@@ -3,6 +3,7 @@ module Graphics.Pixman
     ( pixmanRegionExtents
     , PixmanRegion32
     , PixmanBox32 (..)
+    , pixmanRegionNotEmpty
     )
 where
 
@@ -39,3 +40,8 @@ foreign import ccall unsafe "pixman_region32_extents" c_32_extends :: Ptr Pixman
 
 pixmanRegionExtents :: Ptr PixmanRegion32 -> IO PixmanBox32
 pixmanRegionExtents ptr = peek =<< c_32_extends ptr
+
+foreign import ccall unsafe "pixman_region32_not_empty" c_32_not_empty :: Ptr PixmanRegion32 -> IO Bool
+
+pixmanRegionNotEmpty :: Ptr PixmanRegion32 -> IO Bool
+pixmanRegionNotEmpty = c_32_not_empty

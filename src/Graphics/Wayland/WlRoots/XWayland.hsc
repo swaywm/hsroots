@@ -3,7 +3,9 @@
 module Graphics.Wayland.WlRoots.XWayland
     ( XWayland
     , xwaylandCreate
+    , xwaylandDestroy
     , xwayBindNew
+    , xwayReadEvent
 
     , X11Surface
     , xwaySurfaceGetSurface
@@ -40,8 +42,6 @@ import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.StablePtr (newStablePtr , castStablePtrToPtr)
 import Foreign.Storable (Storable(..))
 
-import Graphics.Wayland.List (getListFromHead)
-import Graphics.Wayland.Resource (getUserData)
 import Graphics.Wayland.Server (DisplayServer (..))
 import Graphics.Wayland.Signal
 import Graphics.Wayland.WlRoots.Box (Point(..), WlrBox(..))
@@ -57,13 +57,20 @@ xwaylandCreate :: DisplayServer -> Ptr WlrCompositor -> IO (Ptr XWayland)
 xwaylandCreate (DisplayServer ptr) comp =
     throwErrnoIfNull "xwaylandCreate" $ c_xwayland_create ptr comp
 
+foreign import ccall unsafe "wlr_xwayland_destroy" c_xwayland_destroy :: Ptr XWayland -> IO ()
+
+xwaylandDestroy :: Ptr XWayland -> IO ()
+xwaylandDestroy = c_xwayland_destroy
+
 xwayBindNew :: Ptr XWayland -> (Ptr X11Surface -> IO ()) -> IO ()
 xwayBindNew shell handler = do
     let signal = #{ptr struct wlr_xwayland, events.new_surface} shell
-    handler <- addListener (WlListener handler) signal
-    sptr <- newStablePtr handler
+    tok <- addListener (WlListener handler) signal
+    sptr <- newStablePtr tok
     poke (#{ptr struct wlr_xwayland, data} shell) (castStablePtrToPtr sptr)
 
+xwayReadEvent :: Ptr XWayland -> Ptr (WlSignal XWayland)
+xwayReadEvent = #{ptr struct wlr_xwayland, events.ready}
 
 data X11Surface
 
