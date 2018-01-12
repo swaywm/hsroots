@@ -56,6 +56,7 @@ library
   exposed-modules:     Graphics.Wayland.Server.Client
   exposed-modules:     Graphics.Wayland.Signal
   exposed-modules:     Graphics.Wayland.WlRoots.Backend
+  exposed-modules:     Graphics.Wayland.WlRoots.Backend.Libinput
   exposed-modules:     Graphics.Wayland.WlRoots.Backend.Multi
   exposed-modules:     Graphics.Wayland.WlRoots.Backend.Session
   exposed-modules:     Graphics.Wayland.WlRoots.Box
@@ -95,7 +96,8 @@ library
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.7 && <5,
                        composition >= 1.0.2 && < 1.1,
-                       hayland, xkbcommon, bytestring, text
+                       hayland, xkbcommon, bytestring, text,
+                       libinput
   
   
   -- Directories containing source files.

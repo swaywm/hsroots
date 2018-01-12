@@ -4,3 +4,6 @@
 [submodule "haskell-xkbcommon"]
 	path = haskell-xkbcommon
 	url = https://github.com/ongy/haskell-xkbcommon
+[submodule "libinput"]
+	path = libinput
+	url = https://github.com/ongy/libinput
