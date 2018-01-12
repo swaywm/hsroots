@@ -3,13 +3,13 @@
 {-# LANGUAGE ExistentialQuantification #-}
 module Graphics.Wayland.Signal
     ( WlSignal
-    , WlListener(..)
+    , WlListener (..)
     , ListenerToken
 
     , makeListenerPtr
     , addListener
     , removeListener
-    , removeListener'
+    , destroyListener
     )
 where
 
@@ -33,14 +33,17 @@ foreign import ccall unsafe "c_signal_add" c_signal_add :: Ptr (WlSignal a) -> P
 foreign import ccall unsafe "wl_list_init" c_list_init :: Ptr WlList -> IO ()
 foreign import ccall unsafe "wl_list_remove" c_list_remove :: Ptr WlList -> IO ()
 
-
-freeWlListener :: forall a. Ptr (WlListener a) -> IO ()
-freeWlListener ptr = do
-    let link = #{ptr struct wl_listener, link} ptr
-    c_list_remove link
+destroyWlListener :: forall a. Ptr (WlListener a) -> IO ()
+destroyWlListener ptr = do
+    removeListener' ptr
     notify :: FunPtr (Ptr a -> IO ()) <- #{peek struct wl_listener, notify} ptr
     when (castFunPtrToPtr notify /= nullPtr) $ freeHaskellFunPtr notify
     #{poke struct wl_listener, notify} ptr nullPtr
+
+
+freeWlListener :: forall a. Ptr (WlListener a) -> IO ()
+freeWlListener ptr = do
+    destroyWlListener ptr
     free ptr
 
 foreign import ccall "wrapper" mkCbFun :: (Ptr (WlListener a) -> Ptr a -> IO ()) -> IO (FunPtr (Ptr (WlListener a) -> Ptr a -> IO ()))
@@ -60,11 +63,18 @@ addListener listener signal = do
     withForeignPtr ptr $ c_signal_add signal
     pure (ListenerToken ptr)
 
+destroyListener :: ListenerToken -> IO ()
+destroyListener (ListenerToken ptr) = withForeignPtr ptr destroyWlListener
+
 removeListener :: ListenerToken -> IO ()
-removeListener (ListenerToken ptr) =
-    withForeignPtr ptr removeListener'
+removeListener (ListenerToken ptr) = withForeignPtr ptr removeListener'
 
 removeListener' :: Ptr (WlListener a) -> IO ()
 removeListener' ptr =
     let link = #{ptr struct wl_listener, link} ptr
-     in c_list_remove link
+     in do
+         -- For some reason c_list_remove makes the elem point at null instead
+         -- of itself, so we got to init it after, to *not* break things if we
+         -- try to remove the element again
+         c_list_remove link
+         c_list_init link

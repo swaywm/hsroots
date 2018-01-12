@@ -31,6 +31,7 @@ import Graphics.Wayland.WlRoots.Input.TabletPad (WlrTabletPad)
 import Graphics.Wayland.WlRoots.Input.TabletTool (WlrTabletTool)
 import Graphics.Wayland.WlRoots.Input.Buttons
 
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 
 data DeviceType
@@ -68,5 +69,7 @@ getDestroySignal :: Ptr InputDevice -> Ptr (WlSignal (InputDevice))
 getDestroySignal = #{ptr struct wlr_input_device, events.destroy}
 
 getDeviceName :: Ptr InputDevice -> IO Text
-getDeviceName ptr =
-    fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_input_device, name} ptr
+getDeviceName ptr = do
+    name <- fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_input_device, name} ptr
+    let pos = T.pack $ ' ':show ptr
+    pure $ name `T.append` pos
