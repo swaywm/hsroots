@@ -7,6 +7,7 @@ module Graphics.Wayland.WlRoots.Output
     , outputDisable
     , makeOutputCurrent
     , swapOutputBuffers
+    , getOutputPosition
 
     , effectiveResolution
     , destroyOutput
@@ -57,7 +58,7 @@ import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
-import Graphics.Wayland.WlRoots.Box (WlrBox(..))
+import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Server (OutputTransform(..))
 import Graphics.Wayland.List (getListFromHead, istListEmpty)
@@ -82,6 +83,11 @@ getModel = fmap (makeMaybe . E.decodeUtf8) . unsafePackCString . #{ptr struct wl
 getSerial :: Ptr WlrOutput -> IO (Maybe Text)
 getSerial = fmap (makeMaybe . E.decodeUtf8) . unsafePackCString . #{ptr struct wlr_output, serial}
 
+getOutputPosition :: Ptr WlrOutput -> IO Point
+getOutputPosition ptr = do
+    x :: Int32 <- #{peek struct wlr_output, lx} ptr
+    y :: Int32 <- #{peek struct wlr_output, ly} ptr
+    pure $ Point (fromIntegral x) (fromIntegral y)
 
 foreign import ccall unsafe "wlr_output_enable" c_output_enable :: Ptr WlrOutput -> Bool -> IO ()
 
