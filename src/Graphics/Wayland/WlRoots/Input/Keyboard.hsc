@@ -25,6 +25,9 @@ module Graphics.Wayland.WlRoots.Input.Keyboard
 
     , modifierInField
     , fieldToModifiers
+
+    , keyStateToButtonState
+    , keyStateFromButtonState
     )
 where
 
@@ -37,6 +40,7 @@ import Data.Word (Word32)
 import Foreign.Ptr (Ptr, plusPtr)
 
 import Graphics.Wayland.Signal (WlSignal)
+import Graphics.Wayland.WlRoots.Input.Buttons
 
 import Text.XkbCommon.InternalTypes (CKeymap, CKeyboardState)
 
@@ -57,6 +61,14 @@ data KeyState
     = KeyReleased
     | KeyPressed
     deriving (Show, Eq)
+
+keyStateToButtonState :: KeyState -> ButtonState
+keyStateToButtonState KeyReleased = ButtonReleased
+keyStateToButtonState KeyPressed = ButtonPressed
+
+keyStateFromButtonState :: ButtonState -> KeyState
+keyStateFromButtonState  ButtonReleased = KeyReleased
+keyStateFromButtonState  ButtonPressed  = KeyPressed
 
 getKeyDataPtr :: Ptr WlrKeyboard -> Ptr (Ptr a)
 getKeyDataPtr = #{ptr struct wlr_keyboard, data}

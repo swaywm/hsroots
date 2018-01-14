@@ -56,6 +56,7 @@ library
   exposed-modules:     Graphics.Wayland.Server.Client
   exposed-modules:     Graphics.Wayland.Signal
   exposed-modules:     Graphics.Wayland.WlRoots.Backend
+  exposed-modules:     Graphics.Wayland.WlRoots.Backend.Headless
   exposed-modules:     Graphics.Wayland.WlRoots.Backend.Libinput
   exposed-modules:     Graphics.Wayland.WlRoots.Backend.Multi
   exposed-modules:     Graphics.Wayland.WlRoots.Backend.Session
