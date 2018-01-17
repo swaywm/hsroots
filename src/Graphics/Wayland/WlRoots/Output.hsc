@@ -5,6 +5,7 @@ module Graphics.Wayland.WlRoots.Output
     ( WlrOutput
     , outputEnable
     , outputDisable
+    , isOutputEnabled
     , makeOutputCurrent
     , swapOutputBuffers
     , getOutputPosition
@@ -49,7 +50,7 @@ where
 import Data.ByteString.Unsafe (unsafePackCString)
 import Data.Int (Int32)
 import Data.Text (Text)
-import Data.Word (Word32)
+import Data.Word (Word32, Word8)
 import Foreign.C.Error (throwErrnoIf_)
 import Foreign.C.String (peekCString)
 import Foreign.C.Types (CInt(..))
@@ -97,6 +98,8 @@ outputEnable = flip c_output_enable True
 outputDisable :: Ptr WlrOutput -> IO ()
 outputDisable = flip c_output_enable False
 
+isOutputEnabled :: Ptr WlrOutput -> IO Bool
+isOutputEnabled = fmap (/= (0 :: Word8)) . #{peek struct wlr_output, enabled}
 
 foreign import ccall unsafe "wlr_output_make_current" c_make_current :: Ptr WlrOutput -> IO ()
 makeOutputCurrent :: Ptr WlrOutput -> IO ()
@@ -192,16 +195,16 @@ getTransMatrix =
 
 data OutputSignals = OutputSignals
     { outSignalFrame :: Ptr (WlSignal ())
-    , outSignalResolution :: Ptr (WlSignal ())
+    , outSignalMode :: Ptr (WlSignal ())
     }
 
 getOutputSignals :: Ptr WlrOutput -> OutputSignals
 getOutputSignals ptr = 
     let frame      = #{ptr struct wlr_output, events.frame} ptr
-        resolution = #{ptr struct wlr_output, events.resolution} ptr
+        mode = #{ptr struct wlr_output, events.mode} ptr
      in OutputSignals
          { outSignalFrame = frame
-         , outSignalResolution = resolution
+         , outSignalMode = mode
          }
 
 getDataPtr :: Ptr WlrOutput -> Ptr (Ptr a)

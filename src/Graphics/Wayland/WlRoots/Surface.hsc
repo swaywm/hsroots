@@ -34,6 +34,7 @@ module Graphics.Wayland.WlRoots.Surface
     , getWlrSurfaceEvents
 
     , surfaceGetScale
+    , surfaceGetSize
     , surfaceSendEnter
     , surfaceSendLeave
     )
@@ -55,7 +56,7 @@ import Graphics.Wayland.Signal
 import Graphics.Wayland.List (getListFromHead)
 import Graphics.Wayland.Resource (WlResource)
 import Graphics.Wayland.Server (Callback(..))
-import Graphics.Wayland.WlRoots.Box (WlrBox(..))
+import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..), withMatrix)
@@ -134,6 +135,16 @@ stateGetInputRegion = #{ptr struct wlr_surface_state, input}
 
 surfaceGetInputRegion :: Ptr WlrSurface -> IO (Ptr PixmanRegion32)
 surfaceGetInputRegion = fmap stateGetInputRegion . getCurrentState
+
+stateGetSize :: Ptr WlrSurfaceState -> IO Point
+stateGetSize state = do
+    width :: CInt <- #{peek struct wlr_surface_state, width} state
+    height :: CInt <- #{peek struct wlr_surface_state, height} state
+
+    pure $ Point (fromIntegral width) (fromIntegral height)
+
+surfaceGetSize :: Ptr WlrSurface -> IO Point
+surfaceGetSize surf = stateGetSize =<< getCurrentState surf
 
 data WlrFrameCallback
 
