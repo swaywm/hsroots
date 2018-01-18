@@ -228,7 +228,8 @@ setOutputScale :: Ptr WlrOutput -> Float -> IO ()
 setOutputScale = c_set_scale
 
 getOutputNeedsSwap :: Ptr WlrOutput -> IO Bool
-getOutputNeedsSwap = #{peek struct wlr_output, needs_swap}
+getOutputNeedsSwap = fmap (/= (0 :: Word8)) . #{peek struct wlr_output, needs_swap}
 
 setOutputNeedsSwap :: Ptr WlrOutput -> Bool -> IO ()
-setOutputNeedsSwap = #{poke struct wlr_output, needs_swap}
+setOutputNeedsSwap ptr val =
+    #{poke struct wlr_output, needs_swap} ptr (if val then 1 else 0 :: Word8)
