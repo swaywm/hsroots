@@ -27,6 +27,9 @@ module Graphics.Wayland.WlRoots.XWayland
     , x11SurfaceOverrideRedirect
     , getTitle
     , getClass
+
+    , getX11ParentSurfrace
+    , getX11Children
     )
 where
 
@@ -44,6 +47,7 @@ import Foreign.Storable (Storable(..))
 
 import Graphics.Wayland.Server (DisplayServer (..))
 import Graphics.Wayland.Signal
+import Graphics.Wayland.List
 import Graphics.Wayland.WlRoots.Box (Point(..), WlrBox(..))
 import Graphics.Wayland.WlRoots.Compositor (WlrCompositor)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
@@ -88,6 +92,18 @@ xwayCloseSurface = c_close
 
 getX11SurfaceDataPtr :: Ptr X11Surface -> Ptr (Ptr a)
 getX11SurfaceDataPtr = #{ptr struct wlr_xwayland_surface, data}
+
+getX11ParentSurfrace :: Ptr X11Surface -> IO (Maybe (Ptr X11Surface))
+getX11ParentSurfrace surf = do
+    parent <- #{peek struct wlr_xwayland_surface, parent} surf
+    if parent == nullPtr
+        then pure Nothing
+        else pure $ Just parent
+
+getX11Children :: Ptr X11Surface -> IO [Ptr X11Surface]
+getX11Children surf =
+    let lHead = #{ptr struct wlr_xwayland_surface, children} surf
+     in getListFromHead lHead #{offset struct wlr_xwayland_surface, parent_link}
 
 data ConfigureEvent = ConfigureEvent
     { configureEvtSurface :: Ptr X11Surface
