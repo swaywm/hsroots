@@ -16,6 +16,7 @@ module Graphics.Wayland.WlRoots.Input.Keyboard
     , keyStateToInt
 
     , KeyboardModifiers (..)
+    , getModifierPtr
     , readModifiers
 
     , WlrModifier (..)
@@ -28,13 +29,15 @@ module Graphics.Wayland.WlRoots.Input.Keyboard
 
     , keyStateToButtonState
     , keyStateFromButtonState
+
+    , getKeyboardKeys
     )
 where
 
 #include <wlr/types/wlr_keyboard.h>
 
 import Data.Bits ((.&.), (.|.), Bits)
-import Foreign.C.Types (CInt(..))
+import Foreign.C.Types (CInt(..), CSize)
 import Foreign.Storable (Storable(..))
 import Data.Word (Word32)
 import Foreign.Ptr (Ptr, plusPtr)
@@ -118,6 +121,9 @@ data KeyboardModifiers = Modifiers
     , modGroup :: Word32
     }
 
+getModifierPtr :: Ptr WlrKeyboard -> Ptr KeyboardModifiers
+getModifierPtr = #{ptr struct wlr_keyboard, modifiers}
+
 readModifiers :: Ptr WlrKeyboard -> IO KeyboardModifiers
 readModifiers ptr = Modifiers
     <$> #{peek struct wlr_keyboard, modifiers.depressed} ptr
@@ -167,3 +173,9 @@ fieldToModifiers field =
                     else mods
             allMods :: [WlrModifier]
             allMods = [Shift, Caps, Ctrl, Alt, Mod2, Mod3, Logo, Mod5]
+
+getKeyboardKeys :: Ptr WlrKeyboard -> IO (Ptr Word32, CSize)
+getKeyboardKeys ptr = do
+    let ret = #{ptr struct wlr_keyboard, keycodes} ptr
+    num <- #{peek struct wlr_keyboard, num_keycodes} ptr
+    pure (ret, num)
