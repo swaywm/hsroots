@@ -3,6 +3,7 @@ module Graphics.Wayland.WlRoots.XCursorManager
     , xCursorManagerCreate
     , xCursorSetImage
     , xCursorLoad
+    , xCursorManagerDestroy
     )
 where
 
@@ -23,6 +24,12 @@ foreign import ccall "wlr_xcursor_manager_create" c_manager_create :: Ptr CChar 
 xCursorManagerCreate :: String -> Word -> IO (Ptr WlrXCursorManager)
 xCursorManagerCreate name size = withCString name $ \str ->
     throwErrnoIfNull "xCursorManagerCreate" $ c_manager_create str (fromIntegral size)
+
+
+foreign import ccall "wlr_xcursor_manager_destroy" c_manager_destroy :: Ptr WlrXCursorManager -> IO ()
+
+xCursorManagerDestroy :: Ptr WlrXCursorManager -> IO ()
+xCursorManagerDestroy = c_manager_destroy
 
 foreign import ccall "wlr_xcursor_manager_set_cursor_image" c_set_cursor_image :: Ptr WlrXCursorManager -> Ptr CChar -> Ptr WlrCursor -> IO ()
 
