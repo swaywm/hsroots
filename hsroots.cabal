@@ -109,9 +109,9 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall
 
-  Extra-libraries:     wlroots
   Extra-libraries:     wayland-server
   Extra-libraries:     input
 
   c-sources:           cbits/signal.c
   PkgConfig-Depends:   pixman-1
+  PkgConfig-Depends:   wlroots
