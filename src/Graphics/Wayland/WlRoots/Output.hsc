@@ -42,6 +42,9 @@ module Graphics.Wayland.WlRoots.Output
 
     , getOutputNeedsSwap
     , setOutputNeedsSwap
+
+    , destroyOutputGlobal
+    , createOutputGlobal
     )
 where
 
@@ -52,7 +55,6 @@ import Data.Int (Int32)
 import Data.Text (Text)
 import Data.Word (Word32, Word8)
 import Foreign.C.Error (throwErrnoIf_)
-import Foreign.C.String (peekCString)
 import Foreign.C.Types (CInt(..))
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Ptr (Ptr, plusPtr, nullPtr)
@@ -233,3 +235,13 @@ getOutputNeedsSwap = fmap (/= (0 :: Word8)) . #{peek struct wlr_output, needs_sw
 setOutputNeedsSwap :: Ptr WlrOutput -> Bool -> IO ()
 setOutputNeedsSwap ptr val =
     #{poke struct wlr_output, needs_swap} ptr (if val then 1 else 0 :: Word8)
+
+foreign import ccall "wlr_output_create_global" c_create_global :: Ptr WlrOutput -> IO ()
+
+createOutputGlobal :: Ptr WlrOutput -> IO ()
+createOutputGlobal = c_create_global
+
+foreign import ccall "wlr_output_destroy_global" c_destroy_global :: Ptr WlrOutput -> IO ()
+
+destroyOutputGlobal :: Ptr WlrOutput -> IO ()
+destroyOutputGlobal = c_destroy_global
