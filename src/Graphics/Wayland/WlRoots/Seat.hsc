@@ -43,7 +43,7 @@ where
 import Foreign.Storable(Storable(..))
 import Data.Int (Int32)
 import Data.Word (Word32)
-import Foreign.Ptr (Ptr, plusPtr)
+import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.C.String (CString, withCString)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CInt(..), CSize (..))
@@ -103,8 +103,12 @@ keyboardNotifyEnter = c_keyboard_enter
 -- struct wlr_keyboard *wlr_seat_get_keyboard(struct wlr_seat *seat);
 foreign import ccall unsafe "wlr_seat_get_keyboard" c_get_keyboard :: Ptr WlrSeat -> IO (Ptr WlrKeyboard)
 
-getSeatKeyboard :: Ptr WlrSeat -> IO (Ptr WlrKeyboard)
-getSeatKeyboard = c_get_keyboard
+getSeatKeyboard :: Ptr WlrSeat -> IO (Maybe (Ptr WlrKeyboard))
+getSeatKeyboard seat = do
+    ret <- c_get_keyboard seat
+    pure $ if ret == nullPtr
+        then Nothing
+        else Just ret
 
 foreign import ccall "wlr_seat_pointer_notify_motion" c_pointer_motion :: Ptr WlrSeat -> Word32 -> Double -> Double -> IO ()
 
@@ -203,5 +207,3 @@ getPointerState = #{ptr struct wlr_seat, pointer_state}
 
 getPointerFocus :: Ptr WlrSeatPointerState -> IO (Ptr WlrSurface)
 getPointerFocus = #{peek struct wlr_seat_pointer_state, focused_surface}
-
-
