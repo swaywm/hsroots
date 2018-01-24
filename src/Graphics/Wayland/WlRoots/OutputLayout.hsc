@@ -21,6 +21,8 @@ module Graphics.Wayland.WlRoots.OutputLayout
 
     , closestPoint
     , addOutputAuto
+    , getOutputLayoutExtends
+    , getOutputLayoutBox
     )
 where
 
@@ -103,7 +105,13 @@ removeOutput :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO ()
 removeOutput layout output =
     c_output_remove layout output
 
--- TODO: output_cords
+foreign import ccall unsafe "wlr_output_layout_get_box" c_get_box :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO (Ptr WlrBox)
+
+getOutputLayoutBox :: Ptr WlrOutputLayout -> Ptr WlrOutput -> IO WlrBox
+getOutputLayoutBox layout out = peek =<< c_get_box layout out
+
+getOutputLayoutExtends :: Ptr WlrOutputLayout -> IO WlrBox
+getOutputLayoutExtends layout = getOutputLayoutBox layout nullPtr
 
 foreign import ccall "wlr_output_layout_contains_point" c_contains_point :: Ptr WlrOutputLayout -> Ptr WlrOutput -> CInt -> CInt -> IO Bool
 
