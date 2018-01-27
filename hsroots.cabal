@@ -80,10 +80,10 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Matrix
   exposed-modules:     Graphics.Wayland.WlRoots.Screenshooter
   exposed-modules:     Graphics.Wayland.WlRoots.Seat
-  exposed-modules:     Graphics.Wayland.WlRoots.Shell
   exposed-modules:     Graphics.Wayland.WlRoots.ServerDecoration
   exposed-modules:     Graphics.Wayland.WlRoots.Surface
   exposed-modules:     Graphics.Wayland.WlRoots.Util
+  exposed-modules:     Graphics.Wayland.WlRoots.WlShell
   exposed-modules:     Graphics.Wayland.WlRoots.XCursor
   exposed-modules:     Graphics.Wayland.WlRoots.XCursorManager
   exposed-modules:     Graphics.Wayland.WlRoots.XWayland
