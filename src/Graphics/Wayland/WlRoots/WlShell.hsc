@@ -21,6 +21,8 @@ module Graphics.Wayland.WlRoots.WlShell
     , getWlShellPopups
     , isPopup
     , getTransientPosition
+
+    , getClient
     )
 where
 
@@ -36,7 +38,7 @@ import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 
 import Graphics.Wayland.List (getListFromHead)
-import Graphics.Wayland.Server (DisplayServer(..))
+import Graphics.Wayland.Server (DisplayServer(..), Client (..))
 import Graphics.Wayland.Signal (WlSignal, addListener, WlListener (..), ListenerToken)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Utility (textFromNull)
@@ -121,3 +123,7 @@ getTransientPosition (WlrWlShellSurface ptr) = do
             x <- #{peek struct wlr_wl_shell_surface_transient_state, x} state
             y <- #{peek struct wlr_wl_shell_surface_transient_state, y} state
             pure (x, y)
+
+
+getClient :: WlrWlShellSurface -> IO Client
+getClient (WlrWlShellSurface ptr) = Client <$> #{peek struct wlr_wl_shell_surface, client} ptr
