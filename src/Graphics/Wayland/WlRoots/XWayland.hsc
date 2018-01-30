@@ -30,6 +30,7 @@ module Graphics.Wayland.WlRoots.XWayland
 
     , getX11ParentSurfrace
     , getX11Children
+    , setXWaylandSeat
     )
 where
 
@@ -48,6 +49,7 @@ import Foreign.Storable (Storable(..))
 import Graphics.Wayland.Server (DisplayServer (..))
 import Graphics.Wayland.Signal
 import Graphics.Wayland.List
+import Graphics.Wayland.WlRoots.Seat (WlrSeat)
 import Graphics.Wayland.WlRoots.Box (Point(..), WlrBox(..))
 import Graphics.Wayland.WlRoots.Compositor (WlrCompositor)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
@@ -234,3 +236,8 @@ getTitle ptr = textFromNull =<< #{peek struct wlr_xwayland_surface, title} ptr
 
 getClass :: Ptr X11Surface -> IO (Maybe Text)
 getClass ptr = textFromNull =<< #{peek struct wlr_xwayland_surface, class} ptr
+
+foreign import ccall "wlr_xwayland_set_seat" c_set_seat :: Ptr XWayland -> Ptr WlrSeat -> IO ()
+
+setXWaylandSeat :: Ptr XWayland -> Ptr WlrSeat -> IO ()
+setXWaylandSeat = c_set_seat
