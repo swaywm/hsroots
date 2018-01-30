@@ -15,14 +15,20 @@ module Graphics.Wayland.WlRoots.Render.Matrix
     , matrixScale
     , matrixRotate
     , matrixMul
+
+    , matrixProjectBox
     )
 where
 
 import System.IO
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr)
-import Foreign.C.Types (CFloat(..))
+import Foreign.C.Types (CFloat(..), CInt (..))
 import Foreign.Marshal.Alloc (allocaBytes)
+import Foreign.Marshal.Utils (with)
+
+import Graphics.Wayland.Server (OutputTransform(..))
+import Graphics.Wayland.WlRoots.Box (WlrBox)
 
 -- | This has to be a float[16]. The 'withMatrix' makes sure it is.
 newtype Matrix = Matrix { unMatrix :: (Ptr CFloat) }
@@ -67,6 +73,14 @@ foreign import ccall unsafe "wlr_matrix_mul" c_matrix_mul :: Ptr CFloat -> Ptr C
 
 matrixMul :: Matrix -> Matrix -> Matrix -> IO ()
 matrixMul (Matrix x) (Matrix y) (Matrix o) = c_matrix_mul x y o
+
+
+foreign import ccall unsafe "wlr_matrix_project_box" c_project_box :: Ptr CFloat -> Ptr WlrBox -> CInt -> CFloat -> Ptr CFloat -> IO ()
+
+matrixProjectBox :: Matrix -> WlrBox -> OutputTransform -> Float -> Matrix -> IO ()
+matrixProjectBox (Matrix mat) box (OutputTransform transform) rotation (Matrix projection) = with box $ \boxPtr -> 
+    c_project_box mat boxPtr (fromIntegral transform) (CFloat rotation) projection
+
 
 printMatrix :: Handle -> Matrix -> IO ()
 printMatrix handle (Matrix p) = do
