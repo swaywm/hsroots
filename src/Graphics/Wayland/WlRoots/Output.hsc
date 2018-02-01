@@ -134,7 +134,7 @@ getEffectiveBox ptr = do
     (width, height) <- effectiveResolution ptr
     pure phys {boxWidth = width, boxHeight = height}
 
-foreign import ccall unsafe "wlr_output_set_transform" c_output_transform :: Ptr WlrOutput -> CInt -> IO ()
+foreign import ccall "wlr_output_set_transform" c_output_transform :: Ptr WlrOutput -> CInt -> IO ()
 
 transformOutput :: Ptr WlrOutput -> OutputTransform -> IO ()
 transformOutput ptr (OutputTransform x) =
@@ -163,7 +163,7 @@ instance Storable OutputMode where
         <*> #{peek struct wlr_output_mode, refresh} ptr
     poke = error "We do not poke output modes"
 
-foreign import ccall unsafe "wlr_output_set_mode" c_set_mode :: Ptr WlrOutput -> Ptr OutputMode -> IO Bool
+foreign import ccall "wlr_output_set_mode" c_set_mode :: Ptr WlrOutput -> Ptr OutputMode -> IO Bool
 
 setOutputMode :: Ptr OutputMode -> Ptr WlrOutput -> IO ()
 setOutputMode mptr ptr = 
@@ -196,18 +196,21 @@ getTransMatrix =
     Matrix . #{ptr struct wlr_output, transform_matrix}
 
 data OutputSignals = OutputSignals
-    { outSignalFrame :: Ptr (WlSignal ())
-    , outSignalMode :: Ptr (WlSignal ())
+    { outSignalFrame :: Ptr (WlSignal WlrOutput)
+    , outSignalMode :: Ptr (WlSignal WlrOutput)
+    , outSignalScale :: Ptr (WlSignal WlrOutput)
+    , outSignalTransform :: Ptr (WlSignal WlrOutput)
+    , outSignalDestroy :: Ptr (WlSignal WlrOutput)
     }
 
 getOutputSignals :: Ptr WlrOutput -> OutputSignals
-getOutputSignals ptr = 
-    let frame      = #{ptr struct wlr_output, events.frame} ptr
-        mode = #{ptr struct wlr_output, events.mode} ptr
-     in OutputSignals
-         { outSignalFrame = frame
-         , outSignalMode = mode
-         }
+getOutputSignals ptr = OutputSignals
+    { outSignalFrame = #{ptr struct wlr_output, events.frame} ptr
+    , outSignalMode = #{ptr struct wlr_output, events.mode} ptr
+    , outSignalScale = #{ptr struct wlr_output, events.scale} ptr
+    , outSignalTransform = #{ptr struct wlr_output, events.transform} ptr
+    , outSignalDestroy = #{ptr struct wlr_output, events.destroy} ptr
+    }
 
 getDataPtr :: Ptr WlrOutput -> Ptr (Ptr a)
 getDataPtr = #{ptr struct wlr_output, data}
@@ -224,7 +227,7 @@ getOutputBox ptr = do
 getOutputScale :: Ptr WlrOutput -> IO Float
 getOutputScale = #{peek struct wlr_output, scale}
 
-foreign import ccall unsafe "wlr_output_set_scale" c_set_scale :: Ptr WlrOutput -> Float -> IO ()
+foreign import ccall "wlr_output_set_scale" c_set_scale :: Ptr WlrOutput -> Float -> IO ()
 
 setOutputScale :: Ptr WlrOutput -> Float -> IO ()
 setOutputScale = c_set_scale
