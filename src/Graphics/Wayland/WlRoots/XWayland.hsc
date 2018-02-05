@@ -63,7 +63,7 @@ xwaylandCreate :: DisplayServer -> Ptr WlrCompositor -> IO (Ptr XWayland)
 xwaylandCreate (DisplayServer ptr) comp =
     throwErrnoIfNull "xwaylandCreate" $ c_xwayland_create ptr comp
 
-foreign import ccall unsafe "wlr_xwayland_destroy" c_xwayland_destroy :: Ptr XWayland -> IO ()
+foreign import ccall "wlr_xwayland_destroy" c_xwayland_destroy :: Ptr XWayland -> IO ()
 
 xwaylandDestroy :: Ptr XWayland -> IO ()
 xwaylandDestroy = c_xwayland_destroy
