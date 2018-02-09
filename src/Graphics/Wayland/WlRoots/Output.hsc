@@ -45,6 +45,9 @@ module Graphics.Wayland.WlRoots.Output
 
     , destroyOutputGlobal
     , createOutputGlobal
+
+    , scheduleOutputFrame
+    , outputTransformedResolution
     )
 where
 
@@ -52,6 +55,7 @@ where
 
 import Data.ByteString.Unsafe (unsafePackCString)
 import Data.Int (Int32)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Word (Word32, Word8)
 import Foreign.C.Error (throwErrnoIf_)
@@ -59,6 +63,8 @@ import Foreign.C.Types (CInt(..))
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
+
+import Graphics.Pixman
 
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
@@ -103,14 +109,19 @@ outputDisable = flip c_output_enable False
 isOutputEnabled :: Ptr WlrOutput -> IO Bool
 isOutputEnabled = fmap (/= (0 :: Word8)) . #{peek struct wlr_output, enabled}
 
-foreign import ccall unsafe "wlr_output_make_current" c_make_current :: Ptr WlrOutput -> IO ()
-makeOutputCurrent :: Ptr WlrOutput -> IO ()
-makeOutputCurrent = c_make_current
+foreign import ccall unsafe "wlr_output_make_current" c_make_current :: Ptr WlrOutput -> Ptr CInt -> IO Word8
+makeOutputCurrent :: Ptr WlrOutput -> IO (Maybe Int)
+makeOutputCurrent out = alloca $ \ptr -> do
+    ret <- c_make_current out ptr
+    if ret == 0
+        then pure Nothing
+        else Just . fromIntegral <$> peek ptr
 
 
-foreign import ccall unsafe "wlr_output_swap_buffers" c_swap_buffers :: Ptr WlrOutput -> IO ()
-swapOutputBuffers :: Ptr WlrOutput -> IO ()
-swapOutputBuffers = c_swap_buffers
+foreign import ccall unsafe "wlr_output_swap_buffers" c_swap_buffers :: Ptr WlrOutput -> Ptr () -> Ptr PixmanRegion32 -> IO Word8
+swapOutputBuffers :: Ptr WlrOutput -> Maybe (Ptr PixmanRegion32) -> IO Bool
+swapOutputBuffers out damage =
+    (/= 0) <$> c_swap_buffers out nullPtr (fromMaybe nullPtr damage)
 
 
 foreign import ccall unsafe "wlr_output_destroy" c_output_destroy :: Ptr WlrOutput -> IO ()
@@ -201,6 +212,7 @@ data OutputSignals = OutputSignals
     , outSignalScale :: Ptr (WlSignal WlrOutput)
     , outSignalTransform :: Ptr (WlSignal WlrOutput)
     , outSignalDestroy :: Ptr (WlSignal WlrOutput)
+    , outSignalNeedsSwap :: Ptr (WlSignal WlrOutput)
     }
 
 getOutputSignals :: Ptr WlrOutput -> OutputSignals
@@ -210,6 +222,7 @@ getOutputSignals ptr = OutputSignals
     , outSignalScale = #{ptr struct wlr_output, events.scale} ptr
     , outSignalTransform = #{ptr struct wlr_output, events.transform} ptr
     , outSignalDestroy = #{ptr struct wlr_output, events.destroy} ptr
+    , outSignalNeedsSwap = #{ptr struct wlr_output, events.needs_swap} ptr
     }
 
 getDataPtr :: Ptr WlrOutput -> Ptr (Ptr a)
@@ -248,3 +261,17 @@ foreign import ccall "wlr_output_destroy_global" c_destroy_global :: Ptr WlrOutp
 
 destroyOutputGlobal :: Ptr WlrOutput -> IO ()
 destroyOutputGlobal = c_destroy_global
+
+foreign import ccall unsafe "wlr_output_transformed_resolution" c_transformed_resolution :: Ptr WlrOutput -> Ptr CInt -> Ptr CInt -> IO ()
+
+outputTransformedResolution :: Ptr WlrOutput -> IO Point
+outputTransformedResolution ptr = alloca $ \xptr -> alloca $ \yptr -> do
+    c_transformed_resolution ptr xptr yptr
+    x <- peek xptr
+    y <- peek yptr
+    pure $ Point (fromIntegral x) (fromIntegral y)
+
+foreign import ccall unsafe "wlr_output_schedule_frame" c_schedule_frame :: Ptr WlrOutput -> IO ()
+
+scheduleOutputFrame :: Ptr WlrOutput -> IO ()
+scheduleOutputFrame = c_schedule_frame

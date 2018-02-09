@@ -19,6 +19,9 @@ module Graphics.Wayland.WlRoots.Render
     , getTextureSize
 
     , renderColoredQuad
+
+    , rendererScissor
+    , rendererClear
     )
 where
 
@@ -34,6 +37,8 @@ import Graphics.Wayland.WlRoots.Render.Color (Color)
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Foreign.Marshal.Utils (with)
 import Control.Exception (bracket_)
+
+import Graphics.Wayland.WlRoots.Box (WlrBox)
 
 data Renderer
 data Texture
@@ -106,8 +111,18 @@ renderColoredQuad :: Ptr Renderer -> Color -> Matrix -> IO ()
 renderColoredQuad rend col (Matrix m) = with col $ \cptr ->
     c_colored_quad rend cptr m
 
+foreign import ccall unsafe "wlr_renderer_clear" c_clear :: Ptr Renderer -> Ptr Color -> IO ()
+
+rendererClear :: Ptr Renderer -> Color -> IO ()
+rendererClear rend col = with col $ c_clear rend
+
 getTextureSize :: Ptr Texture -> IO (Int, Int)
 getTextureSize ptr = do
     width :: CInt <- #{peek struct wlr_texture, width} ptr
     height :: CInt <- #{peek struct wlr_texture, height} ptr
     pure (fromIntegral width, fromIntegral height)
+
+foreign import ccall unsafe "wlr_renderer_scissor" c_scissor :: Ptr Renderer -> Ptr WlrBox -> IO ()
+
+rendererScissor :: Ptr Renderer -> WlrBox -> IO ()
+rendererScissor rend box = with box $ c_scissor rend

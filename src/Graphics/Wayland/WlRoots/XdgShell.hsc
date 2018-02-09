@@ -271,7 +271,7 @@ setMaximized surf maximized = do
 getPopups :: Ptr WlrXdgSurface -> IO [Ptr WlrXdgSurface]
 getPopups surf = do
     let list = #{ptr struct wlr_xdg_surface_v6, popups} surf
-    getListFromHead list #{offset struct wlr_xdg_surface_v6, popup_link}
+    getListFromHead list #{offset struct wlr_xdg_surface_v6, link}
 
 data WlrXdgPopupState
 
