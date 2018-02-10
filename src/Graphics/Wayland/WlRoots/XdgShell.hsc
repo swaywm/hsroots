@@ -30,6 +30,10 @@ module Graphics.Wayland.WlRoots.XdgShell
 
     , getTitle
     , getAppId
+
+    , WlrXdgPopup
+    , xdgPopupGetBase
+    , xdgGetPopupSurfaces
     )
 where
 
@@ -181,6 +185,7 @@ data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
     { xdgSurfaceEvtCommit  :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtDestroy :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtTimeout :: Ptr (WlSignal WlrXdgSurface)
+    , xdgSurfaceEvtPopup   :: Ptr (WlSignal WlrXdgPopup)
 
     , xdgSurfaceEvtMaximize   :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtFullscreen :: Ptr (WlSignal FullscreenEvent)
@@ -196,6 +201,7 @@ getXdgSurfaceEvents ptr = WlrXdgSurfaceEvents
     { xdgSurfaceEvtDestroy = #{ptr struct wlr_xdg_surface_v6, events.destroy} ptr
     , xdgSurfaceEvtCommit = #{ptr struct wlr_xdg_surface_v6, events.destroy} ptr
     , xdgSurfaceEvtTimeout = #{ptr struct wlr_xdg_surface_v6, events.ping_timeout} ptr
+    , xdgSurfaceEvtPopup = #{ptr struct wlr_xdg_surface_v6, events.new_popup} ptr
 
     , xdgSurfaceEvtMaximize = #{ptr struct wlr_xdg_surface_v6, events.request_maximize} ptr
     , xdgSurfaceEvtFullscreen = #{ptr struct wlr_xdg_surface_v6, events.request_fullscreen} ptr
@@ -268,14 +274,21 @@ setMaximized surf maximized = do
         (c_maximize surf maximized)
 
 
-getPopups :: Ptr WlrXdgSurface -> IO [Ptr WlrXdgSurface]
+getPopups :: Ptr WlrXdgSurface -> IO [Ptr WlrXdgPopup]
 getPopups surf = do
     let list = #{ptr struct wlr_xdg_surface_v6, popups} surf
-    getListFromHead list #{offset struct wlr_xdg_surface_v6, link}
+    getListFromHead list #{offset struct wlr_xdg_popup_v6, link}
 
-data WlrXdgPopupState
+xdgPopupGetBase :: Ptr WlrXdgPopup -> IO (Ptr WlrXdgSurface)
+xdgPopupGetBase = #{peek struct wlr_xdg_popup_v6, base}
 
-getPopupState :: Ptr WlrXdgSurface -> IO (Ptr WlrXdgPopupState)
+xdgGetPopupSurfaces :: Ptr WlrXdgSurface -> IO [Ptr WlrXdgSurface]
+xdgGetPopupSurfaces surf =
+    mapM xdgPopupGetBase =<< getPopups surf
+
+data WlrXdgPopup
+
+getPopupState :: Ptr WlrXdgSurface -> IO (Ptr WlrXdgPopup)
 getPopupState = #{peek struct wlr_xdg_surface_v6, popup_state}
 
 getPopupGeometry :: Ptr WlrXdgSurface -> IO WlrBox

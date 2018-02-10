@@ -10,6 +10,7 @@ module Graphics.Wayland.Signal
     , addListener
     , removeListener
     , destroyListener
+    , setDestroyHandler
     )
 where
 
@@ -17,6 +18,7 @@ where
 #include <wayland-server.h>
 
 import Control.Monad (when)
+import Control.Concurrent.MVar
 import Foreign.Storable (Storable(..))
 import Foreign.Marshal.Alloc (mallocBytes, free)
 import Foreign.Ptr (Ptr, FunPtr, plusPtr, freeHaskellFunPtr, nullPtr, castFunPtrToPtr)
@@ -78,3 +80,15 @@ removeListener' ptr =
          -- try to remove the element again
          c_list_remove link
          c_list_init link
+
+-- | Set a signal handler that will remove itself after it's fired once. This
+-- can be used for destroy handlers that don't have to be stored anywhere.
+setDestroyHandler :: Ptr (WlSignal a)
+                  -> (Ptr a -> IO ())
+                  -> IO ()
+setDestroyHandler signal handler = do
+    var <- newEmptyMVar
+    listener <- flip addListener signal . WlListener $ \ptr -> do
+        handler ptr
+        (destroyListener =<< takeMVar var)
+    putMVar var listener

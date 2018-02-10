@@ -84,12 +84,14 @@ withSurfaceMatrix ptr proj trans act = withMatrix $ \mat -> do
 
 data WlrSurfaceEvents = WlrSurfaceEvents
     { wlrSurfaceEvtCommit  :: Ptr (WlSignal WlrSurface)
+    , wlrSurfaceEvtSubSurf :: Ptr (WlSignal WlrSubSurface)
     , wlrSurfaceEvtDestroy :: Ptr (WlSignal WlrSurface)
     }
 
 getWlrSurfaceEvents :: Ptr WlrSurface -> WlrSurfaceEvents
 getWlrSurfaceEvents ptr = WlrSurfaceEvents
     { wlrSurfaceEvtDestroy = #{ptr struct wlr_surface, events.destroy} ptr
+    , wlrSurfaceEvtSubSurf = #{ptr struct wlr_surface, events.new_subsurface} ptr
     , wlrSurfaceEvtCommit = #{ptr struct wlr_surface, events.commit} ptr
     }
 
