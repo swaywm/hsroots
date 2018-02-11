@@ -37,6 +37,7 @@ module Graphics.Wayland.WlRoots.Surface
     , surfaceGetSize
     , surfaceSendEnter
     , surfaceSendLeave
+    , getSurfaceDamage
     )
 where
 
@@ -50,7 +51,7 @@ import Foreign.Ptr (Ptr, castPtr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 import Foreign.Marshal.Alloc (alloca)
 
-import Graphics.Pixman (PixmanRegion32, pixmanRegionNotEmpty)
+import Graphics.Pixman (PixmanRegion32 (..), pixmanRegionNotEmpty)
 import Graphics.Wayland.Signal
 
 import Graphics.Wayland.List (getListFromHead)
@@ -169,10 +170,21 @@ getCurrentState :: Ptr WlrSurface -> IO (Ptr WlrSurfaceState)
 getCurrentState = #{peek struct wlr_surface, current}
 
 stateHasDamage :: Ptr WlrSurfaceState -> IO Bool
-stateHasDamage ptr = pixmanRegionNotEmpty $ #{ptr struct wlr_surface_state, surface_damage} ptr
+stateHasDamage ptr = pixmanRegionNotEmpty . PixmanRegion32 $ #{ptr struct wlr_surface_state, surface_damage} ptr
 
 surfaceHasDamage :: Ptr WlrSurface -> IO Bool
 surfaceHasDamage surf = stateHasDamage =<< getCurrentState surf
+
+getStateDamage :: Ptr WlrSurfaceState -> Ptr PixmanRegion32
+getStateDamage = #{ptr struct wlr_surface_state, surface_damage}
+
+getSurfaceDamage :: Ptr WlrSurface -> IO (Maybe PixmanRegion32)
+getSurfaceDamage surf = do
+    state <- getCurrentState surf
+    hasDamage <- stateHasDamage state
+    pure $ if hasDamage
+        then Just . PixmanRegion32 $ getStateDamage state
+        else Nothing
 
 data WlrSubSurface
 
@@ -212,3 +224,5 @@ foreign import ccall "wlr_surface_send_leave" c_send_leave :: Ptr WlrSurface -> 
 
 surfaceSendLeave :: Ptr WlrSurface -> Ptr WlrOutput -> IO ()
 surfaceSendLeave = c_send_leave
+
+

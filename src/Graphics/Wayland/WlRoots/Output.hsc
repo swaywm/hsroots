@@ -48,6 +48,9 @@ module Graphics.Wayland.WlRoots.Output
 
     , scheduleOutputFrame
     , outputTransformedResolution
+    , invertOutputTransform
+    , composeOutputTransform
+    , getOutputDamage
     )
 where
 
@@ -275,3 +278,17 @@ foreign import ccall unsafe "wlr_output_schedule_frame" c_schedule_frame :: Ptr 
 
 scheduleOutputFrame :: Ptr WlrOutput -> IO ()
 scheduleOutputFrame = c_schedule_frame
+
+foreign import ccall unsafe "wlr_output_transform_invert" c_transform_invert :: CInt -> CInt
+
+invertOutputTransform :: OutputTransform -> OutputTransform
+invertOutputTransform (OutputTransform val) = OutputTransform . fromIntegral $  c_transform_invert (fromIntegral val)
+
+foreign import ccall unsafe "wlr_output_transform_compose" c_transform_compose :: CInt -> CInt -> CInt
+
+composeOutputTransform :: OutputTransform -> OutputTransform -> OutputTransform
+composeOutputTransform (OutputTransform l) (OutputTransform r) =
+    OutputTransform . fromIntegral $ c_transform_compose (fromIntegral l) (fromIntegral r)
+
+getOutputDamage :: Ptr WlrOutput -> PixmanRegion32
+getOutputDamage = PixmanRegion32 . #{ptr struct wlr_output, damage}

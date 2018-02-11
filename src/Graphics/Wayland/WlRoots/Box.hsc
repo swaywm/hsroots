@@ -7,13 +7,21 @@ module Graphics.Wayland.WlRoots.Box
     , toOrigin
     , shrink
     , enlarge
+    , boxTransform
+    , scaleBox
     )
 where
 
 #include <wlr/types/wlr_box.h>
 
+import System.IO.Unsafe (unsafePerformIO)
 import Foreign.C.Types (CInt(..))
+import Foreign.Ptr (Ptr)
 import Foreign.Storable (Storable(..))
+import Foreign.Marshal.Alloc (alloca)
+import Foreign.Marshal.Utils (with)
+
+import Graphics.Wayland.Server (OutputTransform(..))
 
 data WlrBox = WlrBox 
     { boxX :: Int
@@ -66,3 +74,26 @@ shrink (WlrBox _ _ lw lh) (WlrBox _ _ rw rh) = WlrBox 0 0 (min lw rw) (min lh rh
 
 enlarge :: WlrBox -> WlrBox -> WlrBox
 enlarge (WlrBox _ _ lw lh) (WlrBox _ _ rw rh) = WlrBox 0 0 (max lw rw) (max lh rh)
+
+scaleBox :: WlrBox -> Float -> WlrBox
+scaleBox (WlrBox x y w h) factor = WlrBox
+    (floor $ fromIntegral x * factor)
+    (floor $ fromIntegral y * factor)
+    (floor $ fromIntegral w * factor)
+    (floor $ fromIntegral h * factor)
+
+-- void wlr_box_transform(const struct wlr_box *box,
+-- enum wl_output_transform transform, int width, int height,
+-- struct wlr_box *dest);
+foreign import ccall unsafe "wlr_box_transform" c_transform :: Ptr WlrBox -> CInt -> CInt -> CInt -> Ptr WlrBox -> IO ()
+
+boxTransform' :: WlrBox -> OutputTransform -> Int -> Int -> IO WlrBox
+boxTransform' box (OutputTransform val) x y = alloca $ \ret -> do
+    with box $ \boxPtr ->
+        c_transform boxPtr (fromIntegral val) (fromIntegral x) (fromIntegral y) ret
+    peek ret
+
+boxTransform :: WlrBox -> OutputTransform -> Int -> Int -> WlrBox
+boxTransform box trans width height =
+    unsafePerformIO $ boxTransform' box trans width height
+{-# NOINLINE boxTransform #-}

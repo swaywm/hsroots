@@ -29,7 +29,7 @@ where
 
 import Foreign.Storable (Storable(..))
 import Graphics.Wayland.Server (Buffer)
-import Foreign.Ptr (Ptr)
+import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Foreign.C.Types (CFloat(..), CInt(..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
@@ -124,5 +124,6 @@ getTextureSize ptr = do
 
 foreign import ccall unsafe "wlr_renderer_scissor" c_scissor :: Ptr Renderer -> Ptr WlrBox -> IO ()
 
-rendererScissor :: Ptr Renderer -> WlrBox -> IO ()
-rendererScissor rend box = with box $ c_scissor rend
+rendererScissor :: Ptr Renderer -> Maybe WlrBox -> IO ()
+rendererScissor rend (Just box) = with box $ c_scissor rend
+rendererScissor rend Nothing =  c_scissor rend nullPtr
