@@ -38,6 +38,7 @@ module Graphics.Wayland.WlRoots.Surface
     , surfaceSendEnter
     , surfaceSendLeave
     , getSurfaceDamage
+    , subSurfaceGetDestroyEvent
     )
 where
 
@@ -187,6 +188,9 @@ getSurfaceDamage surf = do
         else Nothing
 
 data WlrSubSurface
+
+subSurfaceGetDestroyEvent :: Ptr WlrSubSurface -> Ptr (WlSignal WlrSubSurface)
+subSurfaceGetDestroyEvent = #{ptr struct wlr_subsurface, events.destroy}
 
 subSurfaceGetSurface :: Ptr WlrSubSurface -> IO (Ptr WlrSurface)
 subSurfaceGetSurface = #{peek struct wlr_subsurface, surface}
