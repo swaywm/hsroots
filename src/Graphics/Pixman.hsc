@@ -16,6 +16,7 @@ module Graphics.Pixman
     , pixmanRegionIntersect
     , boxToWlrBox
     , copyRegion
+    , pixmanRegionSubtract
     )
 where
 
@@ -153,3 +154,10 @@ pixmanRegionIntersect :: PixmanRegion32 -> PixmanRegion32 -> IO ()
 pixmanRegionIntersect dst src = withRegion32 dst $ \dstPtr ->
     withRegion32 src $ \srcPtr ->
         c_32_intersect dstPtr dstPtr srcPtr
+
+foreign import ccall unsafe "pixman_region32_subtract" c_32_subtract :: Ptr PixmanRegion32 -> Ptr PixmanRegion32 -> Ptr PixmanRegion32 -> IO ()
+
+pixmanRegionSubtract :: PixmanRegion32 -> PixmanRegion32 -> IO ()
+pixmanRegionSubtract reg sub = withRegion32 reg $ \regPtr ->
+    withRegion32 sub $ \subPtr ->
+        c_32_subtract regPtr regPtr subPtr
