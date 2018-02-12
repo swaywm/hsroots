@@ -31,6 +31,7 @@ module Graphics.Wayland.WlRoots.XWayland
     , getX11ParentSurfrace
     , getX11Children
     , setXWaylandSeat
+    , isX11Mapped
     )
 where
 
@@ -241,3 +242,8 @@ foreign import ccall "wlr_xwayland_set_seat" c_set_seat :: Ptr XWayland -> Ptr W
 
 setXWaylandSeat :: Ptr XWayland -> Ptr WlrSeat -> IO ()
 setXWaylandSeat = c_set_seat
+
+isX11Mapped :: Ptr X11Surface -> IO Bool
+isX11Mapped ptr = do
+    val :: Word8 <- #{peek struct wlr_xwayland_surface, mapped} ptr
+    pure $ val /= 0
