@@ -17,6 +17,7 @@ module Graphics.Pixman
     , boxToWlrBox
     , copyRegion
     , pixmanRegionSubtract
+    , withBoxRegion
     )
 where
 
@@ -48,6 +49,11 @@ boxToWlrBox (PixmanBox32 x1 y1 x2 y2) = WlrBox
     (fromIntegral y1)
     (fromIntegral $ x2 - x1)
     (fromIntegral $ y2 - y1)
+
+withBoxRegion :: WlrBox -> (PixmanRegion32 -> IO a) -> IO a
+withBoxRegion box fun = withRegion $ \region -> do
+    resetRegion region $ Just box
+    fun region
 
 data PixmanBox32 = PixmanBox32
     { pBoxX1 :: Int32
