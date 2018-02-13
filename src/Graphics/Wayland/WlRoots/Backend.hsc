@@ -47,21 +47,18 @@ backendGetEgl :: Ptr Backend -> IO (Ptr EGL)
 backendGetEgl = throwErrnoIfNull "backendGetEgl" . c_backend_get_egl
 
 data BackendSignals = BackendSignals
-    { inputAdd     :: Ptr (WlSignal InputDevice)
-    , inputRemove  :: Ptr (WlSignal InputDevice)
-    , outputAdd    :: Ptr (WlSignal WlrOutput)
-    , outputRemove :: Ptr (WlSignal WlrOutput)
+    { backendEvtInput   :: Ptr (WlSignal InputDevice)
+    , backendEvtOutput  :: Ptr (WlSignal WlrOutput)
+    , backendEvtDestroy :: Ptr (WlSignal Backend)
     }
 
 backendGetSignals :: Ptr Backend -> BackendSignals
 backendGetSignals ptr = 
-    let input_add = #{ptr struct wlr_backend, events.input_add} ptr
-        input_remove = #{ptr struct wlr_backend, events.input_remove} ptr
-        output_add = #{ptr struct wlr_backend, events.output_add} ptr
-        output_remove = #{ptr struct wlr_backend, events.output_remove} ptr
+    let input_add = #{ptr struct wlr_backend, events.new_input} ptr
+        output_add = #{ptr struct wlr_backend, events.new_output} ptr
+        destroy = #{ptr struct wlr_backend, events.destroy} ptr
      in BackendSignals
-         { inputAdd = input_add
-         , inputRemove = input_remove
-         , outputAdd = output_add
-         , outputRemove = output_remove
+         { backendEvtInput = input_add
+         , backendEvtOutput = output_add
+         , backendEvtDestroy = destroy
          }

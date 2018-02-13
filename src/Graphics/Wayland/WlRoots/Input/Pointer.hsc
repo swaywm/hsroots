@@ -18,13 +18,14 @@ where
 
 #include <wlr/types/wlr_pointer.h>
 
-import Foreign.Storable (Storable(..))
+import Data.Word (Word32)
 import Foreign.C.Types (CInt(..))
 import Foreign.Ptr (Ptr, plusPtr, castPtr)
+import Foreign.Storable (Storable(..))
+
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.WlRoots.Input.Buttons
 import {-# SOURCE #-} Graphics.Wayland.WlRoots.Input (InputDevice)
-import Data.Word (Word32, Word64)
 
 data PointerEvents = PointerEvents
     { pointerButton :: Ptr (WlSignal WlrEventPointerButton)

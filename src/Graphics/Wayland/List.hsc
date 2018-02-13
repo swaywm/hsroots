@@ -11,8 +11,6 @@ where
 import Foreign.Storable (peekByteOff)
 import Foreign.Ptr (Ptr, plusPtr)
 
-import System.IO
-
 data WlList
 
 getListElems' :: Ptr WlList -> Ptr WlList -> IO [Ptr WlList]
