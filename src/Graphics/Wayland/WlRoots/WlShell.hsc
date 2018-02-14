@@ -96,11 +96,13 @@ getClass (WlrWlShellSurface ptr) = textFromNull =<< #{peek struct wlr_wl_shell_s
 
 data WlrWlSurfaceEvents = WlrWlSurfaceEvents
     { wlrWlSurfaceEvtDestroy :: Ptr (WlSignal WlrWlShellSurface)
+    , wlrWlSurfaceEvtPopup   :: Ptr (WlSignal WlrWlShellSurface)
     }
 
 getWlrWlSurfaceEvents :: WlrWlShellSurface -> WlrWlSurfaceEvents
 getWlrWlSurfaceEvents (WlrWlShellSurface ptr) = WlrWlSurfaceEvents
     { wlrWlSurfaceEvtDestroy = #{ptr struct wlr_wl_shell_surface, events.destroy} ptr
+    , wlrWlSurfaceEvtPopup   = #{ptr struct wlr_wl_shell_surface, events.new_popup} ptr
     }
 
 getWlShellPopups :: WlrWlShellSurface -> IO [WlrWlShellSurface]
