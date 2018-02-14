@@ -32,6 +32,7 @@ module Graphics.Wayland.WlRoots.XWayland
     , getX11Children
     , setXWaylandSeat
     , isX11Mapped
+    , getX11Pid
     )
 where
 
@@ -46,6 +47,7 @@ import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.StablePtr (newStablePtr , castStablePtrToPtr)
 import Foreign.Storable (Storable(..))
+import System.Posix.Types (ProcessID)
 
 import Graphics.Wayland.Server (DisplayServer (..))
 import Graphics.Wayland.Signal
@@ -247,3 +249,6 @@ isX11Mapped :: Ptr X11Surface -> IO Bool
 isX11Mapped ptr = do
     val :: Word8 <- #{peek struct wlr_xwayland_surface, mapped} ptr
     pure $ val /= 0
+
+getX11Pid :: Ptr X11Surface -> IO ProcessID
+getX11Pid = #{peek struct wlr_xwayland_surface, pid}
