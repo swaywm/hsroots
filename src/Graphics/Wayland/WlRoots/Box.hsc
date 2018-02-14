@@ -77,10 +77,10 @@ enlarge (WlrBox _ _ lw lh) (WlrBox _ _ rw rh) = WlrBox 0 0 (max lw rw) (max lh r
 
 scaleBox :: WlrBox -> Float -> WlrBox
 scaleBox (WlrBox x y w h) factor = WlrBox
-    (floor $ fromIntegral x * factor)
-    (floor $ fromIntegral y * factor)
-    (floor $ fromIntegral w * factor)
-    (floor $ fromIntegral h * factor)
+    (ceiling $ fromIntegral x * factor)
+    (ceiling $ fromIntegral y * factor)
+    (ceiling $ fromIntegral w * factor)
+    (ceiling $ fromIntegral h * factor)
 
 -- void wlr_box_transform(const struct wlr_box *box,
 -- enum wl_output_transform transform, int width, int height,

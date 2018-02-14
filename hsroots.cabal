@@ -117,3 +117,8 @@ library
   c-sources:           cbits/signal.c
   PkgConfig-Depends:   pixman-1
   PkgConfig-Depends:   wlroots
+
+  --build-depends: dump-core
+  --ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html
+  --ghc-options: -O2
+
