@@ -2,6 +2,7 @@ module Graphics.Wayland.WlRoots.Render.Color
     ( Color (..)
     , colorWhite
     , colorBlack
+    , darkenBy
     )
 where
 
@@ -14,6 +15,10 @@ data Color = Color
     , colorB :: Float
     , colorA :: Float
     }
+
+darkenBy :: Float -> Color -> Color
+darkenBy d (Color r g b a) =
+    Color (r * d) (g * d) (b * d) a
 
 instance Storable Color where
     sizeOf _ = 4 * sizeOf (undefined :: Float)
