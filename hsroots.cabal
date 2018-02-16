@@ -72,6 +72,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Pointer
   exposed-modules:     Graphics.Wayland.WlRoots.Input.TabletPad
   exposed-modules:     Graphics.Wayland.WlRoots.Input.TabletTool
+  exposed-modules:     Graphics.Wayland.WlRoots.Input.Touch
   exposed-modules:     Graphics.Wayland.WlRoots.Output
   exposed-modules:     Graphics.Wayland.WlRoots.OutputLayout
   exposed-modules:     Graphics.Wayland.WlRoots.PrimarySelection
