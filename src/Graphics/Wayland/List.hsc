@@ -2,7 +2,7 @@
 module Graphics.Wayland.List
     ( WlList
     , getListFromHead
-    , istListEmpty
+    , isListEmpty
     )
 where
 
@@ -26,8 +26,8 @@ getListElems listHead = do
     nxt <- #{peek struct wl_list, next} listHead
     getListElems' listHead nxt
 
-istListEmpty :: Ptr WlList -> IO Bool
-istListEmpty ptr = (==) ptr <$> #{peek struct wl_list, next} ptr
+isListEmpty :: Ptr WlList -> IO Bool
+isListEmpty ptr = (==) ptr <$> #{peek struct wl_list, next} ptr
 
 getListFromHead :: Ptr WlList -> Word -> IO [Ptr a]
 getListFromHead listHead offset =

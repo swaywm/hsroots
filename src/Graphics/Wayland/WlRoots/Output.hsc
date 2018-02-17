@@ -73,7 +73,7 @@ import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Server (OutputTransform(..))
-import Graphics.Wayland.List (getListFromHead, istListEmpty)
+import Graphics.Wayland.List (getListFromHead, isListEmpty)
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
@@ -191,7 +191,7 @@ getHeight :: Ptr WlrOutput -> IO Int32
 getHeight = #{peek struct wlr_output, height}
 
 hasModes :: Ptr WlrOutput -> IO Bool
-hasModes = fmap not . istListEmpty . #{ptr struct wlr_output, modes}
+hasModes = fmap not . isListEmpty . #{ptr struct wlr_output, modes}
 
 getModes :: Ptr WlrOutput -> IO [Ptr OutputMode]
 getModes ptr = do

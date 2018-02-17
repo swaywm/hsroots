@@ -24,9 +24,10 @@ module Graphics.Wayland.WlRoots.Seat
     , SetCursorEvent (..)
     , SeatSignals (..)
 
-    , WlrSeatClient
+    , WlrSeatClient (..)
     , seatGetSignals
     , seatClientGetClient
+    , clientHasTouch
 
     , WlrSeatKeyboardState
     , getKeyboardState
@@ -48,6 +49,7 @@ import Foreign.C.String (CString, withCString)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CInt(..), CSize (..))
 import Data.Bits ((.|.))
+import Graphics.Wayland.List (isListEmpty)
 import Graphics.Wayland.Server (DisplayServer(..), Client (..), SeatCapability(..))
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
@@ -71,14 +73,20 @@ destroySeat :: Ptr WlrSeat -> IO ()
 destroySeat = c_destroy
 
 
-data WlrSeatHandle
+newtype WlrSeatClient = WlrSeatClient { unSeatClient :: Ptr WlrSeatClient }
 
-foreign import ccall "wlr_seat_client_for_wl_client" c_handle_for_client :: Ptr WlrSeat -> Ptr Client -> IO (Ptr WlrSeatHandle)
+foreign import ccall "wlr_seat_client_for_wl_client" c_handle_for_client :: Ptr WlrSeat -> Ptr Client -> IO (Ptr WlrSeatClient)
 
-handleForClient :: Ptr WlrSeat -> Client -> IO (Ptr WlrSeatHandle)
-handleForClient seat (Client client) =
-    throwErrnoIfNull "handleForClient" $ c_handle_for_client seat client
+handleForClient :: Ptr WlrSeat -> Client -> IO (Maybe WlrSeatClient)
+handleForClient seat (Client client) = do
+    ret <-  c_handle_for_client seat client
+    if ret == nullPtr
+        then pure Nothing
+        else pure . Just $ WlrSeatClient ret
 
+clientHasTouch :: WlrSeatClient -> IO Bool
+clientHasTouch =
+    fmap not . isListEmpty . #{ptr struct wlr_seat_client, touches} . unSeatClient
 
 foreign import ccall "wlr_seat_set_capabilities" c_set_caps :: Ptr WlrSeat -> CInt -> IO ()
 
@@ -154,13 +162,11 @@ foreign import ccall "wlr_seat_keyboard_clear_focus" c_keyboard_clear_focus :: P
 keyboardClearFocus :: Ptr WlrSeat -> IO ()
 keyboardClearFocus = c_keyboard_clear_focus
 
-data WlrSeatClient
-
-seatClientGetClient :: Ptr WlrSeatClient -> IO Client
-seatClientGetClient = fmap Client . #{peek struct wlr_seat_client, client}
+seatClientGetClient :: WlrSeatClient -> IO Client
+seatClientGetClient = fmap Client . #{peek struct wlr_seat_client, client} . unSeatClient
 
 data SetCursorEvent = SetCursorEvent
-    { seatCursorSurfaceClient   :: Ptr WlrSeatClient
+    { seatCursorSurfaceClient   :: WlrSeatClient
     , seatCursorSurfaceSurface  :: Ptr WlrSurface
     , seatCursorSurfaceSerial   :: Word32
     , seatCursorSurfaceHotspotX :: Int32
@@ -170,14 +176,14 @@ data SetCursorEvent = SetCursorEvent
 instance Storable SetCursorEvent where
     sizeOf _ = #{size struct wlr_seat_pointer_request_set_cursor_event}
     alignment _ = #{alignment struct wlr_seat_pointer_request_set_cursor_event}
-    peek ptr = SetCursorEvent
+    peek ptr = SetCursorEvent . WlrSeatClient
         <$> #{peek struct wlr_seat_pointer_request_set_cursor_event, seat_client} ptr
         <*> #{peek struct wlr_seat_pointer_request_set_cursor_event, surface} ptr
         <*> #{peek struct wlr_seat_pointer_request_set_cursor_event, serial} ptr
         <*> #{peek struct wlr_seat_pointer_request_set_cursor_event, hotspot_x} ptr
         <*> #{peek struct wlr_seat_pointer_request_set_cursor_event, hotspot_y} ptr
     poke ptr evt = do
-        #{poke struct wlr_seat_pointer_request_set_cursor_event, seat_client} ptr $ seatCursorSurfaceClient evt
+        #{poke struct wlr_seat_pointer_request_set_cursor_event, seat_client} ptr . unSeatClient $ seatCursorSurfaceClient evt
         #{poke struct wlr_seat_pointer_request_set_cursor_event, surface} ptr $ seatCursorSurfaceSurface evt
         #{poke struct wlr_seat_pointer_request_set_cursor_event, serial} ptr $ seatCursorSurfaceSerial evt
         #{poke struct wlr_seat_pointer_request_set_cursor_event, hotspot_x} ptr $ seatCursorSurfaceHotspotX evt
