@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module Graphics.Wayland.WlRoots.Cursor
     ( WlrCursor
     , createCursor
@@ -23,17 +24,19 @@ module Graphics.Wayland.WlRoots.Cursor
     , cursorGetEvents
     , setCursorImage
     , setCursorSurface
+    , absCoordsToGlobal
     )
 where
 
 #include <wlr/types/wlr_cursor.h>
 
-import Data.Word (Word32)
+import Data.Word (Word32, Word8)
 import Data.Int (Int32)
 import Data.Maybe (fromMaybe)
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Foreign.Ptr (Ptr, nullPtr, plusPtr)
 import Foreign.Storable (Storable(..))
+import Foreign.Marshal.Alloc (alloca)
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.WlRoots.Box (WlrBox)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
@@ -101,8 +104,6 @@ foreign import ccall "wlr_cursor_destroy" c_cursor_destroy :: Ptr WlrCursor -> I
 destroyCursor :: Ptr WlrCursor -> IO ()
 destroyCursor = c_cursor_destroy
 
-
-foreign import ccall "wlr_cursor_set_xcursor" c_set_xcursor :: Ptr WlrCursor -> Ptr WlrXCursor -> IO ()
 
 setXCursor :: Ptr WlrCursor -> Ptr WlrXCursor -> IO ()
 setXCursor = \_ _ -> pure ()
@@ -182,3 +183,13 @@ foreign import ccall "wlr_cursor_set_surface" c_set_surface :: Ptr WlrCursor -> 
 
 setCursorSurface :: Integral a => Ptr WlrCursor -> Ptr WlrSurface -> a -> a -> IO ()
 setCursorSurface cursor surface hotspotX hotspotY = c_set_surface cursor surface (fromIntegral hotspotX) (fromIntegral hotspotY)
+
+
+-- bool wlr_cursor_absolute_to_layout_coords(struct wlr_cursor *cur,struct wlr_input_device *device, double x_mm, double y_mm,double width_mm, double height_mm, double *lx, double *ly) {
+
+foreign import ccall unsafe "wlr_cursor_absolute_to_layout_coords" c_absolute_to_layout_coords :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> Double -> Double -> Ptr Double -> Ptr Double -> IO Word8
+
+absCoordsToGlobal :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> Double -> Double -> IO (Double, Double)
+absCoordsToGlobal cursor dev x y w h = alloca $ \xptr -> alloca $ \yptr -> do
+    _ <- c_absolute_to_layout_coords cursor dev x y w h xptr yptr
+    (,) <$> peek xptr <*> peek yptr
