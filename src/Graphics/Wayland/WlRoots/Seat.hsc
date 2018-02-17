@@ -36,6 +36,12 @@ module Graphics.Wayland.WlRoots.Seat
     , WlrSeatPointerState
     , getPointerState
     , getPointerFocus
+
+    , touchNotifyMotion
+    , touchNotifyUp
+    , touchNotifyDown
+    , touchPointFocus
+    , touchClearFocus
     )
 where
 
@@ -213,3 +219,25 @@ getPointerState = #{ptr struct wlr_seat, pointer_state}
 
 getPointerFocus :: Ptr WlrSeatPointerState -> IO (Ptr WlrSurface)
 getPointerFocus = #{peek struct wlr_seat_pointer_state, focused_surface}
+
+
+foreign import ccall "wlr_seat_touch_notify_down" c_touch_notify_down :: Ptr WlrSeat -> Ptr WlrSurface -> Word32 -> Int32 -> Double -> Double -> IO Word32
+touchNotifyDown :: Ptr WlrSeat -> Ptr WlrSurface -> Word32 -> Int32 -> Double -> Double -> IO Word32
+touchNotifyDown = c_touch_notify_down
+
+
+foreign import ccall "wlr_seat_touch_notify_up" c_touch_notify_up :: Ptr WlrSeat -> Word32 -> Int32 -> IO ()
+touchNotifyUp :: Ptr WlrSeat -> Word32 -> Int32 -> IO ()
+touchNotifyUp = c_touch_notify_up
+
+foreign import ccall "wlr_seat_touch_notify_motion" c_touch_notify_motion :: Ptr WlrSeat -> Word32 -> Int32 -> Double -> Double -> IO ()
+touchNotifyMotion :: Ptr WlrSeat -> Word32 -> Int32 -> Double -> Double -> IO ()
+touchNotifyMotion = c_touch_notify_motion
+
+foreign import ccall "wlr_seat_touch_point_focus" c_touch_point_focus :: Ptr WlrSeat -> Ptr WlrSurface -> Word32 -> Int32 -> Double -> Double -> IO ()
+touchPointFocus :: Ptr WlrSeat -> Ptr WlrSurface -> Word32 -> Int32 -> Double -> Double -> IO ()
+touchPointFocus = c_touch_point_focus
+
+foreign import ccall "wlr_seat_touch_point_clear_focus" c_touch_point_clear_focus :: Ptr WlrSeat -> Word32 -> Int32 -> IO ()
+touchClearFocus :: Ptr WlrSeat -> Word32 -> Int32 -> IO ()
+touchClearFocus = c_touch_point_clear_focus
