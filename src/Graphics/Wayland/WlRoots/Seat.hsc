@@ -42,6 +42,7 @@ module Graphics.Wayland.WlRoots.Seat
     , touchNotifyDown
     , touchPointFocus
     , touchClearFocus
+    , getSelectionSource
     )
 where
 
@@ -63,6 +64,7 @@ import Graphics.Wayland.WlRoots.Input.Buttons
 import Graphics.Wayland.WlRoots.Input.Pointer (axisOToInt, AxisOrientation)
 import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard, KeyState(..), keyStateToInt, KeyboardModifiers)
 
+import Graphics.Wayland.WlRoots.DeviceManager (WlrDataSource (..))
 import Graphics.Wayland.Signal (WlSignal)
 
 data WlrSeat
@@ -241,3 +243,10 @@ touchPointFocus = c_touch_point_focus
 foreign import ccall "wlr_seat_touch_point_clear_focus" c_touch_point_clear_focus :: Ptr WlrSeat -> Word32 -> Int32 -> IO ()
 touchClearFocus :: Ptr WlrSeat -> Word32 -> Int32 -> IO ()
 touchClearFocus = c_touch_point_clear_focus
+
+getSelectionSource :: Ptr WlrSeat -> IO (Maybe WlrDataSource)
+getSelectionSource ptr = do
+    ret <- #{peek struct wlr_seat, selection_data_source} ptr
+    pure $ if ret /= nullPtr
+        then Just $ WlrDataSource ret
+        else Nothing
