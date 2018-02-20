@@ -72,16 +72,16 @@ data ToolAxis
     | AxisWheel Double
     deriving (Eq, Show, Read)
 
-toolAxisToInt :: Num a => ToolAxis -> a
-toolAxisToInt (AxisX _ _ )     = #{const WLR_TABLET_TOOL_AXIS_X}
-toolAxisToInt (AxisY _ _ )     = #{const WLR_TABLET_TOOL_AXIS_Y}
-toolAxisToInt (AxisDistance _) = #{const WLR_TABLET_TOOL_AXIS_DISTANCE}
-toolAxisToInt (AxisPressure _) = #{const WLR_TABLET_TOOL_AXIS_PRESSURE}
-toolAxisToInt (AxisTiltX _)    = #{const WLR_TABLET_TOOL_AXIS_TILT_X}
-toolAxisToInt (AxisTiltY _)    = #{const WLR_TABLET_TOOL_AXIS_TILT_Y}
-toolAxisToInt (AxisRotation _) = #{const WLR_TABLET_TOOL_AXIS_ROTATION}
-toolAxisToInt (AxisSlider _)   = #{const WLR_TABLET_TOOL_AXIS_SLIDER}
-toolAxisToInt (AxisWheel _)    = #{const WLR_TABLET_TOOL_AXIS_WHEEL}
+_toolAxisToInt :: Num a => ToolAxis -> a
+_toolAxisToInt (AxisX _ _ )     = #{const WLR_TABLET_TOOL_AXIS_X}
+_toolAxisToInt (AxisY _ _ )     = #{const WLR_TABLET_TOOL_AXIS_Y}
+_toolAxisToInt (AxisDistance _) = #{const WLR_TABLET_TOOL_AXIS_DISTANCE}
+_toolAxisToInt (AxisPressure _) = #{const WLR_TABLET_TOOL_AXIS_PRESSURE}
+_toolAxisToInt (AxisTiltX _)    = #{const WLR_TABLET_TOOL_AXIS_TILT_X}
+_toolAxisToInt (AxisTiltY _)    = #{const WLR_TABLET_TOOL_AXIS_TILT_Y}
+_toolAxisToInt (AxisRotation _) = #{const WLR_TABLET_TOOL_AXIS_ROTATION}
+_toolAxisToInt (AxisSlider _)   = #{const WLR_TABLET_TOOL_AXIS_SLIDER}
+_toolAxisToInt (AxisWheel _)    = #{const WLR_TABLET_TOOL_AXIS_WHEEL}
 
 readToolAxis :: (Eq a, Num a) => a -> Ptr ToolAxisEvent -> Maybe (IO ToolAxis)
 readToolAxis #{const WLR_TABLET_TOOL_AXIS_X} ptr = Just $ AxisX

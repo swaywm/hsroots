@@ -12,7 +12,7 @@ where
 
 #include <wlr/types/wlr_data_device.h>
 
-import Data.ByteString (ByteString, useAsCString)
+import Data.ByteString (useAsCString)
 import Data.Text (Text)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CChar, CInt (..))
