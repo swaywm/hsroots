@@ -9,6 +9,7 @@ module Graphics.Wayland.WlRoots.Box
     , enlarge
     , boxTransform
     , scaleBox
+    , translateBox
     )
 where
 
@@ -81,6 +82,9 @@ scaleBox (WlrBox x y w h) factor = WlrBox
     (ceiling $ fromIntegral y * factor)
     (ceiling $ fromIntegral w * factor)
     (ceiling $ fromIntegral h * factor)
+
+translateBox :: Int -> Int -> WlrBox -> WlrBox
+translateBox x y (WlrBox bx by bh bw) = WlrBox (x + bx) (y + by) bh bw
 
 -- void wlr_box_transform(const struct wlr_box *box,
 -- enum wl_output_transform transform, int width, int height,

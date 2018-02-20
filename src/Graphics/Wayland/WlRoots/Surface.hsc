@@ -39,6 +39,7 @@ module Graphics.Wayland.WlRoots.Surface
     , surfaceSendLeave
     , getSurfaceDamage
     , subSurfaceGetDestroyEvent
+    , surfaceGetTransform
     )
 where
 
@@ -54,10 +55,10 @@ import Foreign.Marshal.Alloc (alloca)
 
 import Graphics.Pixman (PixmanRegion32 (..), pixmanRegionNotEmpty)
 import Graphics.Wayland.Signal
+import Graphics.Wayland.Server (Callback(..), OutputTransform (..))
 
 import Graphics.Wayland.List (getListFromHead)
 import Graphics.Wayland.Resource (WlResource)
-import Graphics.Wayland.Server (Callback(..))
 import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
@@ -127,6 +128,12 @@ stateGetSubsurfaceBox state = do
         , boxHeight = fromIntegral height
         , boxWidth = fromIntegral width
         }
+
+stateGetTransform :: Ptr WlrSurfaceState -> IO OutputTransform
+stateGetTransform = fmap OutputTransform . #{peek struct wlr_surface_state, transform}
+
+surfaceGetTransform :: Ptr WlrSurface -> IO OutputTransform
+surfaceGetTransform surf = stateGetTransform =<< getCurrentState surf
 
 stateGetScale :: Ptr WlrSurfaceState -> IO Word32
 stateGetScale = #{peek struct wlr_surface_state, scale}
