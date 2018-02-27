@@ -66,6 +66,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.DeviceManager
   exposed-modules:     Graphics.Wayland.WlRoots.Egl
   exposed-modules:     Graphics.Wayland.WlRoots.GammaControl
+  exposed-modules:     Graphics.Wayland.WlRoots.IdleInhibit
   exposed-modules:     Graphics.Wayland.WlRoots.Input
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Buttons
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Keyboard

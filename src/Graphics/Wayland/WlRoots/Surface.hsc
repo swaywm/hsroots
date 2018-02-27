@@ -40,6 +40,9 @@ module Graphics.Wayland.WlRoots.Surface
     , getSurfaceDamage
     , subSurfaceGetDestroyEvent
     , surfaceGetTransform
+
+    , pokeSurfaceData
+    , peekSurfaceData
     )
 where
 
@@ -65,6 +68,12 @@ import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..), withMatrix)
 
 data WlrSurface
+
+pokeSurfaceData :: Ptr WlrSurface -> Ptr a -> IO ()
+pokeSurfaceData = #{poke struct wlr_surface, data}
+
+peekSurfaceData :: Ptr WlrSurface -> IO (Ptr a)
+peekSurfaceData = #{peek struct wlr_surface, data}
 
 foreign import ccall unsafe "wlr_surface_create" c_create :: Ptr WlResource -> Ptr Renderer -> IO (Ptr WlrSurface)
 
