@@ -92,6 +92,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.XCursorManager
   exposed-modules:     Graphics.Wayland.WlRoots.XWayland
   exposed-modules:     Graphics.Wayland.WlRoots.XdgShell
+  exposed-modules:     Graphics.Wayland.WlRoots.XdgShellv6
   
   -- Modules included in this library but not exported.
   other-modules:       Utility
