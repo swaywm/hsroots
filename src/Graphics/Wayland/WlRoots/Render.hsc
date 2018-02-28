@@ -7,6 +7,7 @@ module Graphics.Wayland.WlRoots.Render
 
     , getMatrix
     , renderWithMatrix
+    , renderWithMatrixA
     , bufferIsDrm
     , rendererDestroy
     , uploadPixels
@@ -74,11 +75,13 @@ getMatrix tex matrix projection x y =
     c_get_matrix tex matrix projection (fromIntegral x) (fromIntegral y)
 
 
-foreign import ccall unsafe "wlr_render_with_matrix" c_render_with_matrix :: Ptr Renderer -> Ptr Texture -> Ptr CFloat -> IO Bool
+foreign import ccall unsafe "wlr_render_with_matrix" c_render_with_matrix :: Ptr Renderer -> Ptr Texture -> Ptr CFloat -> CFloat -> IO Bool
 
 renderWithMatrix :: Ptr Renderer -> Ptr Texture -> Matrix -> IO ()
-renderWithMatrix r t (Matrix m) = throwErrnoIf_ not "renderWithMatrix" $ c_render_with_matrix r t m
+renderWithMatrix r t (Matrix m) = throwErrnoIf_ not "renderWithMatrix" $ c_render_with_matrix r t m 1.0
 
+renderWithMatrixA :: Ptr Renderer -> Ptr Texture -> Matrix -> CFloat -> IO ()
+renderWithMatrixA r t (Matrix m) a = throwErrnoIf_ not "renderWithMatrixA" $ c_render_with_matrix r t m a
 
 foreign import ccall unsafe "wlr_renderer_buffer_is_drm" c_buffer_is_drm :: Ptr Renderer -> Ptr Buffer -> IO Bool
 
