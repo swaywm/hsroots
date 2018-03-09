@@ -43,29 +43,35 @@ module Graphics.Wayland.WlRoots.Seat
     , touchPointFocus
     , touchClearFocus
     , getSelectionSource
+
+    , WlrPointerGrabInterface (..)
+    , setSeatPointerGrab
+    , endSeatPointerGrab
     )
 where
 
 #include <wlr/types/wlr_seat.h>
 
-import Foreign.Storable(Storable(..))
+import Data.Bits ((.|.))
 import Data.Int (Int32)
 import Data.Word (Word32)
-import Foreign.Ptr (Ptr, plusPtr, nullPtr)
-import Foreign.C.String (CString, withCString)
 import Foreign.C.Error (throwErrnoIfNull)
+import Foreign.C.String (CString, withCString)
 import Foreign.C.Types (CInt(..), CSize (..))
-import Data.Bits ((.|.))
+import Foreign.Ptr (Ptr, plusPtr, nullPtr, FunPtr)
+import Foreign.StablePtr (castPtrToStablePtr, deRefStablePtr, newStablePtr, castStablePtrToPtr, freeStablePtr)
+import Foreign.Storable(Storable(..))
+import Foreign.Marshal.Alloc (free, callocBytes)
+
 import Graphics.Wayland.List (isListEmpty)
 import Graphics.Wayland.Server (DisplayServer(..), Client (..), SeatCapability(..))
-import Graphics.Wayland.WlRoots.Surface (WlrSurface)
+import Graphics.Wayland.Signal (WlSignal)
+import Graphics.Wayland.WlRoots.DeviceManager (WlrDataSource (..))
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Buttons
-import Graphics.Wayland.WlRoots.Input.Pointer (axisOToInt, AxisOrientation)
 import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard, KeyState(..), keyStateToInt, KeyboardModifiers)
-
-import Graphics.Wayland.WlRoots.DeviceManager (WlrDataSource (..))
-import Graphics.Wayland.Signal (WlSignal)
+import Graphics.Wayland.WlRoots.Input.Pointer (axisOToInt, AxisOrientation)
+import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 
 data WlrSeat
 
@@ -138,13 +144,13 @@ pointerClearFocus :: Ptr WlrSeat -> IO ()
 pointerClearFocus = c_pointer_clear_focus
 
 
-foreign import ccall unsafe "wlr_seat_pointer_notify_button" c_notify_button :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> IO ()
+foreign import ccall "wlr_seat_pointer_notify_button" c_notify_button :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> IO ()
 
 pointerNotifyButton :: Ptr WlrSeat -> Word32 -> Word32 -> ButtonState -> IO ()
 pointerNotifyButton seat time button state =
     c_notify_button seat time button (buttonStateToInt state)
 
-foreign import ccall unsafe "wlr_seat_pointer_notify_axis" c_pointer_notify_axis :: Ptr WlrSeat -> Word32 -> CInt -> Double -> IO ()
+foreign import ccall "wlr_seat_pointer_notify_axis" c_pointer_notify_axis :: Ptr WlrSeat -> Word32 -> CInt -> Double -> IO ()
 
 pointerNotifyAxis :: Ptr WlrSeat -> Word32 -> AxisOrientation -> Double -> IO ()
 pointerNotifyAxis seat time orientation value =
@@ -250,3 +256,90 @@ getSelectionSource ptr = do
     pure $ if ret /= nullPtr
         then Just $ WlrDataSource ret
         else Nothing
+
+data WlrSeatPointerGrab
+
+data WlrPointerGrabInterface = WlrPointerGrabInterface
+    { pointerGrabEnter  :: Ptr WlrSurface -> Double -> Double -> IO ()
+    , pointerGrabMotion :: Word32 -> Double -> Double -> IO ()
+    , pointerGrabButton :: Word32 -> Word32 -> Word32 -> IO Word32
+    , pointerGrabAxis   :: Word32 -> CInt -> Double -> IO ()
+    , pointerGrabCancel :: IO ()
+    }
+
+getPointerGrabData :: Ptr WlrSeatPointerGrab -> IO (Ptr a)
+getPointerGrabData = #{peek struct wlr_seat_pointer_grab, data}
+
+pointerGrabEnterImpl :: Ptr WlrSeatPointerGrab -> Ptr WlrSurface -> Double -> Double -> IO ()
+pointerGrabEnterImpl grab surf x y = do
+    ifacePtr <- getPointerGrabData grab
+    iface <- deRefStablePtr $ castPtrToStablePtr ifacePtr
+    pointerGrabEnter iface surf x y
+
+foreign export ccall "pointerGrabEnterImpl" pointerGrabEnterImpl :: Ptr WlrSeatPointerGrab -> Ptr WlrSurface -> Double -> Double -> IO ()
+foreign import ccall "&pointerGrabEnterImpl" pointerGrabEnterPtr :: FunPtr (Ptr WlrSeatPointerGrab -> Ptr WlrSurface -> Double -> Double -> IO ())
+
+
+pointerGrabMotionImpl :: Ptr WlrSeatPointerGrab -> Word32 -> Double -> Double -> IO ()
+pointerGrabMotionImpl grab time x y = do
+    ifacePtr <- getPointerGrabData grab
+    iface <- deRefStablePtr $ castPtrToStablePtr ifacePtr
+    pointerGrabMotion iface time x y
+
+foreign export ccall "pointerGrabMotionImpl" pointerGrabMotionImpl :: Ptr WlrSeatPointerGrab -> Word32 -> Double -> Double -> IO ()
+foreign import ccall "&pointerGrabMotionImpl" pointerGrabMotionPtr :: FunPtr (Ptr WlrSeatPointerGrab -> Word32 -> Double -> Double -> IO ())
+
+
+pointerGrabButtonImpl :: Ptr WlrSeatPointerGrab -> Word32 -> Word32 -> Word32 -> IO Word32
+pointerGrabButtonImpl grab time button state = do
+    ifacePtr <- getPointerGrabData grab
+    iface <- deRefStablePtr $ castPtrToStablePtr ifacePtr
+    pointerGrabButton iface time button state
+
+foreign export ccall "pointerGrabButtonImpl" pointerGrabButtonImpl :: Ptr WlrSeatPointerGrab -> Word32 -> Word32 -> Word32 -> IO Word32
+foreign import ccall "&pointerGrabButtonImpl" pointerGrabButtonPtr :: FunPtr (Ptr WlrSeatPointerGrab -> Word32 -> Word32 -> Word32 -> IO Word32)
+
+
+pointerGrabAxisImpl :: Ptr WlrSeatPointerGrab -> Word32 -> CInt -> Double -> IO ()
+pointerGrabAxisImpl grab time orientation value = do
+    ifacePtr <- getPointerGrabData grab
+    iface <- deRefStablePtr $ castPtrToStablePtr ifacePtr
+    pointerGrabAxis iface time orientation value
+
+foreign export ccall "pointerGrabAxisImpl" pointerGrabAxisImpl :: Ptr WlrSeatPointerGrab -> Word32 -> CInt -> Double -> IO ()
+foreign import ccall "&pointerGrabAxisImpl" pointerGrabAxisPtr :: FunPtr (Ptr WlrSeatPointerGrab -> Word32 -> CInt -> Double -> IO ())
+
+
+pointerGrabCancelImpl :: Ptr WlrSeatPointerGrab -> IO ()
+pointerGrabCancelImpl grab = do
+    ifacePtr <- getPointerGrabData grab
+    iface <- deRefStablePtr $ castPtrToStablePtr ifacePtr
+    pointerGrabCancel iface
+    freeStablePtr $ castPtrToStablePtr ifacePtr
+    free grab
+
+foreign export ccall "pointerGrabCancelImpl" pointerGrabCancelImpl :: Ptr WlrSeatPointerGrab -> IO ()
+foreign import ccall "&pointerGrabCancelImpl" pointerGrabCancelPtr :: FunPtr (Ptr WlrSeatPointerGrab -> IO ())
+
+foreign import ccall "wlr_seat_pointer_start_grab" c_pointer_start_grab :: Ptr WlrSeat -> Ptr WlrSeatPointerGrab -> IO ()
+
+setSeatPointerGrab :: Ptr WlrSeat -> WlrPointerGrabInterface -> IO ()
+setSeatPointerGrab seat iface = do
+    grab <- callocBytes $ #{size struct wlr_seat_pointer_grab} + #{size struct wlr_pointer_grab_interface}
+    let cIface = plusPtr grab #{size struct wlr_seat_pointer_grab}
+    sPtr <- newStablePtr iface
+    #{poke struct wlr_seat_pointer_grab, data} grab $ castStablePtrToPtr sPtr
+    #{poke struct wlr_seat_pointer_grab, interface} grab $ cIface
+
+    #{poke struct wlr_pointer_grab_interface, enter} cIface pointerGrabEnterPtr
+    #{poke struct wlr_pointer_grab_interface, motion} cIface pointerGrabMotionPtr
+    #{poke struct wlr_pointer_grab_interface, button} cIface pointerGrabButtonPtr
+    #{poke struct wlr_pointer_grab_interface, axis} cIface pointerGrabAxisPtr
+    #{poke struct wlr_pointer_grab_interface, cancel} cIface pointerGrabCancelPtr
+
+    c_pointer_start_grab seat grab
+
+foreign import ccall "wlr_seat_pointer_end_grab" c_pointer_end_grab :: Ptr WlrSeat -> IO ()
+
+endSeatPointerGrab :: Ptr WlrSeat -> IO ()
+endSeatPointerGrab = c_pointer_end_grab
