@@ -239,7 +239,7 @@ sendClose surf = do
 
 
 getGeometry :: Ptr WlrXdgSurface -> IO WlrBox
-getGeometry ptr = peek =<< #{peek struct wlr_xdg_surface_v6, geometry} ptr
+getGeometry ptr = #{peek struct wlr_xdg_surface_v6, geometry} ptr
 
 
 foreign import ccall "wlr_xdg_toplevel_v6_set_size" c_set_size :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO ()
@@ -289,7 +289,7 @@ xdgGetPopupSurfaces surf =
 data WlrXdgPopup
 
 getPopupState :: Ptr WlrXdgSurface -> IO (Ptr WlrXdgPopup)
-getPopupState = #{peek struct wlr_xdg_surface_v6, popup_state}
+getPopupState = #{peek struct wlr_xdg_surface_v6, popup}
 
 getPopupGeometry :: Ptr WlrXdgSurface -> IO WlrBox
 getPopupGeometry surf = #{peek struct wlr_xdg_popup_v6, geometry} =<< getPopupState surf

@@ -5,7 +5,6 @@ module Graphics.Wayland.WlRoots.Render
     , Texture
     , textureCreate
 
-    , getMatrix
     , renderWithMatrix
     , renderWithMatrixA
     , bufferIsDrm
@@ -68,14 +67,7 @@ textureCreate :: Ptr Renderer -> IO (Ptr Texture)
 textureCreate = throwErrnoIfNull "textureCreate" . c_texture_create
 
 
-foreign import ccall unsafe "wlr_texture_get_matrix" c_get_matrix :: Ptr Texture -> Matrix -> Matrix -> CInt -> CInt -> IO ()
-
-getMatrix :: Ptr Texture -> Matrix -> Matrix -> Int -> Int -> IO ()
-getMatrix tex matrix projection x y =
-    c_get_matrix tex matrix projection (fromIntegral x) (fromIntegral y)
-
-
-foreign import ccall unsafe "wlr_render_with_matrix" c_render_with_matrix :: Ptr Renderer -> Ptr Texture -> Ptr CFloat -> CFloat -> IO Bool
+foreign import ccall unsafe "wlr_render_texture_with_matrix" c_render_with_matrix :: Ptr Renderer -> Ptr Texture -> Ptr CFloat -> CFloat -> IO Bool
 
 renderWithMatrix :: Ptr Renderer -> Ptr Texture -> Matrix -> IO ()
 renderWithMatrix r t (Matrix m) = throwErrnoIf_ not "renderWithMatrix" $ c_render_with_matrix r t m 1.0

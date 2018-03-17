@@ -3,7 +3,6 @@
 {-# LANGUAGE TupleSections #-}
 module Graphics.Wayland.WlRoots.Surface
     ( WlrSurface
-    , withSurfaceMatrix
     , surfaceGetTexture
 
     , createSurface
@@ -43,6 +42,8 @@ module Graphics.Wayland.WlRoots.Surface
 
     , pokeSurfaceData
     , peekSurfaceData
+
+    , surfaceFromResource
     )
 where
 
@@ -51,7 +52,7 @@ where
 import Data.Composition ((.:))
 import Data.Word (Word32)
 import Foreign.C.Error (throwErrnoIfNull)
-import Foreign.C.Types (CFloat(..), CInt(..))
+import Foreign.C.Types (CInt(..))
 import Foreign.Ptr (Ptr, castPtr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 import Foreign.Marshal.Alloc (alloca)
@@ -65,7 +66,6 @@ import Graphics.Wayland.Resource (WlResource)
 import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
-import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..), withMatrix)
 
 data WlrSurface
 
@@ -82,17 +82,6 @@ createSurface = throwErrnoIfNull "createSurface" .: c_create
 
 getSurfaceResource :: Ptr WlrSurface -> IO (Ptr WlResource)
 getSurfaceResource = #{peek struct wlr_surface, resource}
-
-foreign import ccall unsafe "wlr_surface_get_matrix" c_get_matrix :: Ptr WlrSurface -> Ptr CFloat -> Ptr CFloat -> Ptr CFloat -> IO ()
-
-getSurfaceMatrix :: Ptr WlrSurface -> Matrix -> Matrix -> Matrix -> IO ()
-getSurfaceMatrix ptr (Matrix mat) (Matrix projection) (Matrix transform) =
-    c_get_matrix ptr mat projection transform
-
-withSurfaceMatrix :: Ptr WlrSurface -> Matrix -> Matrix -> (Matrix -> IO a) -> IO a
-withSurfaceMatrix ptr proj trans act = withMatrix $ \mat -> do
-    getSurfaceMatrix ptr mat proj trans
-    act mat
 
 data WlrSurfaceEvents = WlrSurfaceEvents
     { wlrSurfaceEvtCommit  :: Ptr (WlSignal WlrSurface)
@@ -245,4 +234,7 @@ foreign import ccall "wlr_surface_send_leave" c_send_leave :: Ptr WlrSurface -> 
 surfaceSendLeave :: Ptr WlrSurface -> Ptr WlrOutput -> IO ()
 surfaceSendLeave = c_send_leave
 
+foreign import ccall "wlr_surface_from_resource" c_from_resource :: Ptr WlResource -> IO (Ptr WlrSurface)
 
+surfaceFromResource :: Ptr WlResource -> IO (Ptr WlrSurface)
+surfaceFromResource = c_from_resource

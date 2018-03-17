@@ -2,6 +2,7 @@
 module Graphics.Wayland.List
     ( WlList
     , getListFromHead
+    , getListElems
     , isListEmpty
     )
 where

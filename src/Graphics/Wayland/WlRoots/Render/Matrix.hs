@@ -36,7 +36,7 @@ newtype Matrix = Matrix { unMatrix :: (Ptr CFloat) }
 -- | Do something with a matrix. This needs to be IO for at least as long as we
 -- keep the matrix type/operations from wlroots
 withMatrix :: (Matrix -> IO a) -> IO a
-withMatrix act = allocaBytes (16 * 4) $ act . Matrix
+withMatrix act = allocaBytes (9 * 4) $ act . Matrix
 
 -- | Same as 'withMatrix' but make sure the matrix is the identity matrix.
 withIdentity :: (Matrix -> IO a) -> IO a
@@ -51,16 +51,16 @@ matrixIdentity :: Matrix -> IO ()
 matrixIdentity = c_matrix_identity . unMatrix
 
 
-foreign import ccall unsafe "wlr_matrix_translate" c_matrix_translate :: Ptr CFloat -> CFloat -> CFloat -> CFloat -> IO ()
+foreign import ccall unsafe "wlr_matrix_translate" c_matrix_translate :: Ptr CFloat -> CFloat -> CFloat -> IO ()
 
-matrixTranslate :: Matrix -> Float -> Float -> Float -> IO ()
-matrixTranslate (Matrix p) x y z = c_matrix_translate p (CFloat x) (CFloat y) (CFloat z)
+matrixTranslate :: Matrix -> Float -> Float -> IO ()
+matrixTranslate (Matrix p) x y = c_matrix_translate p (CFloat x) (CFloat y)
 
 
-foreign import ccall unsafe "wlr_matrix_scale" c_matrix_scale :: Ptr CFloat -> CFloat -> CFloat -> CFloat -> IO ()
+foreign import ccall unsafe "wlr_matrix_scale" c_matrix_scale :: Ptr CFloat -> CFloat -> CFloat -> IO ()
 
-matrixScale :: Matrix -> Float -> Float -> Float -> IO ()
-matrixScale (Matrix p) x y z = c_matrix_scale p (CFloat x) (CFloat y) (CFloat z)
+matrixScale :: Matrix -> Float -> Float -> IO ()
+matrixScale (Matrix p) x y = c_matrix_scale p (CFloat x) (CFloat y)
 
 
 foreign import ccall unsafe "wlr_matrix_rotate" c_matrix_rotate :: Ptr CFloat -> CFloat -> IO ()
@@ -69,7 +69,7 @@ matrixRotate :: Matrix -> Float -> IO ()
 matrixRotate (Matrix p) r = c_matrix_rotate p (CFloat r)
 
 
-foreign import ccall unsafe "wlr_matrix_mul" c_matrix_mul :: Ptr CFloat -> Ptr CFloat -> Ptr CFloat -> IO ()
+foreign import ccall unsafe "wlr_matrix_multiply" c_matrix_mul :: Ptr CFloat -> Ptr CFloat -> Ptr CFloat -> IO ()
 
 matrixMul :: Matrix -> Matrix -> Matrix -> IO ()
 matrixMul (Matrix x) (Matrix y) (Matrix o) = c_matrix_mul x y o

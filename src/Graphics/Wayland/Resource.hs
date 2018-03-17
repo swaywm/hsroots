@@ -4,11 +4,13 @@ module Graphics.Wayland.Resource
     , getUserData
     , resourceDestroy
     , resourceGetClient
+    , resourceFromLink
     )
 where
 
 import Foreign.Ptr (Ptr)
 
+import Graphics.Wayland.List (WlList)
 import Graphics.Wayland.Server (Client (..))
 
 data WlResource
@@ -27,3 +29,8 @@ foreign import ccall unsafe "wl_resource_get_client" c_get_client :: Ptr WlResou
 
 resourceGetClient :: Ptr WlResource -> IO Client
 resourceGetClient = fmap Client . c_get_client
+
+foreign import ccall unsafe "wl_resource_from_link" c_from_link :: Ptr WlList -> Ptr WlResource
+
+resourceFromLink :: Ptr WlList -> Ptr WlResource
+resourceFromLink = c_from_link

@@ -51,11 +51,14 @@ module Graphics.Wayland.WlRoots.Output
     , invertOutputTransform
     , composeOutputTransform
     , getOutputDamage
+    , outputFromResource
+    , outputResourceForClient
     )
 where
 
 #include <wlr/types/wlr_output.h>
 
+import Control.Monad (filterM)
 import Data.ByteString.Unsafe (unsafePackCString)
 import Data.Int (Int32)
 import Data.Maybe (fromMaybe)
@@ -69,11 +72,13 @@ import Foreign.Storable (Storable(..))
 
 import Graphics.Pixman
 
+import Graphics.Wayland.Resource (WlResource, resourceFromLink, resourceGetClient)
+import Graphics.Wayland.Server (Client (..))
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Server (OutputTransform(..))
-import Graphics.Wayland.List (getListFromHead, isListEmpty)
+import Graphics.Wayland.List (getListFromHead, isListEmpty, getListElems)
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
@@ -292,3 +297,16 @@ composeOutputTransform (OutputTransform l) (OutputTransform r) =
 
 getOutputDamage :: Ptr WlrOutput -> PixmanRegion32
 getOutputDamage = PixmanRegion32 . #{ptr struct wlr_output, damage}
+
+foreign import ccall unsafe "wlr_output_from_resource" c_from_resource :: Ptr WlResource -> IO (Ptr WlrOutput)
+
+outputFromResource :: Ptr WlResource -> IO (Ptr WlrOutput)
+outputFromResource = c_from_resource
+
+outputResourceForClient :: Client -> Ptr WlrOutput -> IO (Ptr WlResource)
+outputResourceForClient target output = do
+    elems <- getListElems $ #{ptr struct wlr_output, wl_resources} output
+    ret <- flip filterM elems $ \link -> do
+        client <- resourceGetClient $ resourceFromLink link
+        pure (client == target)
+    pure . resourceFromLink $ head ret
