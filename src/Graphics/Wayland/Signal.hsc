@@ -11,6 +11,7 @@ module Graphics.Wayland.Signal
     , removeListener
     , destroyListener
     , setDestroyHandler
+    , addDestroyListener
     )
 where
 
@@ -92,3 +93,13 @@ setDestroyHandler signal handler = do
         handler ptr
         (destroyListener =<< takeMVar var)
     putMVar var listener
+
+
+addDestroyListener :: (Ptr a -> IO ()) -> (Ptr (WlListener a) -> IO ()) -> IO ()
+addDestroyListener fun adder = do
+    var <- newEmptyMVar
+    listener <- makeListenerPtr . WlListener $ \ptr -> do
+        fun ptr
+        (destroyListener =<< takeMVar var)
+    withForeignPtr listener adder
+    putMVar var (ListenerToken listener)
