@@ -186,6 +186,8 @@ data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
     , xdgSurfaceEvtDestroy :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtTimeout :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtPopup   :: Ptr (WlSignal WlrXdgPopup)
+    , xdgSurfaceEvtMap     :: Ptr (WlSignal WlrXdgSurface)
+    , xdgSurfaceEvtUnmap   :: Ptr (WlSignal WlrXdgSurface)
 
     , xdgSurfaceEvtMaximize   :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtFullscreen :: Ptr (WlSignal FullscreenEvent)
@@ -202,6 +204,8 @@ getXdgSurfaceEvents ptr = WlrXdgSurfaceEvents
     , xdgSurfaceEvtCommit = #{ptr struct wlr_xdg_surface, events.destroy} ptr
     , xdgSurfaceEvtTimeout = #{ptr struct wlr_xdg_surface, events.ping_timeout} ptr
     , xdgSurfaceEvtPopup = #{ptr struct wlr_xdg_surface, events.new_popup} ptr
+    , xdgSurfaceEvtMap = #{ptr struct wlr_xdg_surface, events.map} ptr
+    , xdgSurfaceEvtUnmap = #{ptr struct wlr_xdg_surface, events.unmap} ptr
 
     , xdgSurfaceEvtMaximize = #{ptr struct wlr_xdg_surface, events.request_maximize} ptr
     , xdgSurfaceEvtFullscreen = #{ptr struct wlr_xdg_surface, events.request_fullscreen} ptr

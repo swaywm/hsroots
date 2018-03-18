@@ -186,6 +186,8 @@ data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
     , xdgSurfaceEvtDestroy :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtTimeout :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtPopup   :: Ptr (WlSignal WlrXdgPopup)
+    , xdgSurfaceEvtMap     :: Ptr (WlSignal WlrXdgSurface)
+    , xdgSurfaceEvtUnmap   :: Ptr (WlSignal WlrXdgSurface)
 
     , xdgSurfaceEvtMaximize   :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtFullscreen :: Ptr (WlSignal FullscreenEvent)
@@ -202,6 +204,8 @@ getXdgSurfaceEvents ptr = WlrXdgSurfaceEvents
     , xdgSurfaceEvtCommit = #{ptr struct wlr_xdg_surface_v6, events.destroy} ptr
     , xdgSurfaceEvtTimeout = #{ptr struct wlr_xdg_surface_v6, events.ping_timeout} ptr
     , xdgSurfaceEvtPopup = #{ptr struct wlr_xdg_surface_v6, events.new_popup} ptr
+    , xdgSurfaceEvtMap = #{ptr struct wlr_xdg_surface_v6, events.map} ptr
+    , xdgSurfaceEvtUnmap = #{ptr struct wlr_xdg_surface_v6, events.unmap} ptr
 
     , xdgSurfaceEvtMaximize = #{ptr struct wlr_xdg_surface_v6, events.request_maximize} ptr
     , xdgSurfaceEvtFullscreen = #{ptr struct wlr_xdg_surface_v6, events.request_fullscreen} ptr
@@ -288,11 +292,16 @@ xdgGetPopupSurfaces surf =
 
 data WlrXdgPopup
 
-getPopupState :: Ptr WlrXdgSurface -> IO (Ptr WlrXdgPopup)
-getPopupState = #{peek struct wlr_xdg_surface_v6, popup}
+getPopupState :: Ptr WlrXdgSurface -> IO (Maybe (Ptr WlrXdgPopup))
+getPopupState surf = do
+    ret <- #{peek struct wlr_xdg_surface_v6, popup} surf
+    if ret == nullPtr
+        then pure Nothing
+        else pure $ Just ret
 
-getPopupGeometry :: Ptr WlrXdgSurface -> IO WlrBox
-getPopupGeometry surf = #{peek struct wlr_xdg_popup_v6, geometry} =<< getPopupState surf
+
+getPopupGeometry :: Ptr WlrXdgSurface -> IO (Maybe WlrBox)
+getPopupGeometry surf = traverse #{peek struct wlr_xdg_popup_v6, geometry} =<< getPopupState surf
 
 
 getTitle :: Ptr WlrXdgSurface -> IO (Maybe Text)
