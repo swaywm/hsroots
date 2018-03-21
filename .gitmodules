@@ -6,4 +6,4 @@
 	url = https://github.com/ongy/haskell-xkbcommon
 [submodule "libinput"]
 	path = libinput
-	url = https://github.com/ongy/libinput
+	url = https://github.com/waymonad/libinput
