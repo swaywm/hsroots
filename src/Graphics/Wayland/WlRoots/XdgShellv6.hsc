@@ -6,6 +6,11 @@ module Graphics.Wayland.WlRoots.XdgShellv6
 
     , WlrXdgSurface
     , xdgSurfaceGetSurface
+    , getXdgToplevel
+
+    , WlrXdgToplevel
+    , WlrXdgToplevelEvents
+    , getXdgToplevelEvents
 
     , MoveEvent (..)
     , ResizeEvent (..)
@@ -83,6 +88,7 @@ xdgShellDestroy :: Ptr WlrXdgShell -> IO ()
 xdgShellDestroy = c_shell_destroy
 
 data WlrXdgSurface
+data WlrXdgToplevel
 
 isConfigured :: Ptr WlrXdgSurface -> IO Bool
 isConfigured = #{peek struct wlr_xdg_surface_v6, configured}
@@ -188,14 +194,6 @@ data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
     , xdgSurfaceEvtPopup   :: Ptr (WlSignal WlrXdgPopup)
     , xdgSurfaceEvtMap     :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtUnmap   :: Ptr (WlSignal WlrXdgSurface)
-
-    , xdgSurfaceEvtMaximize   :: Ptr (WlSignal WlrXdgSurface)
-    , xdgSurfaceEvtFullscreen :: Ptr (WlSignal FullscreenEvent)
-    , xdgSurfaceEvtMinimize   :: Ptr (WlSignal WlrXdgSurface)
-
-    , xdgSurfaceEvtMove   :: Ptr (WlSignal MoveEvent)
-    , xdgSurfaceEvtResize :: Ptr (WlSignal ResizeEvent)
-    , xdgSurfaceEvtMenu   :: Ptr (WlSignal MenuEvent)
     }
 
 getXdgSurfaceEvents :: Ptr WlrXdgSurface -> WlrXdgSurfaceEvents
@@ -206,15 +204,36 @@ getXdgSurfaceEvents ptr = WlrXdgSurfaceEvents
     , xdgSurfaceEvtPopup = #{ptr struct wlr_xdg_surface_v6, events.new_popup} ptr
     , xdgSurfaceEvtMap = #{ptr struct wlr_xdg_surface_v6, events.map} ptr
     , xdgSurfaceEvtUnmap = #{ptr struct wlr_xdg_surface_v6, events.unmap} ptr
-
-    , xdgSurfaceEvtMaximize = #{ptr struct wlr_xdg_surface_v6, events.request_maximize} ptr
-    , xdgSurfaceEvtFullscreen = #{ptr struct wlr_xdg_surface_v6, events.request_fullscreen} ptr
-    , xdgSurfaceEvtMinimize = #{ptr struct wlr_xdg_surface_v6, events.request_minimize} ptr
-
-    , xdgSurfaceEvtMove = #{ptr struct wlr_xdg_surface_v6, events.request_move} ptr
-    , xdgSurfaceEvtResize = #{ptr struct wlr_xdg_surface_v6, events.request_resize} ptr
-    , xdgSurfaceEvtMenu = #{ptr struct wlr_xdg_surface_v6, events.request_show_window_menu} ptr
     }
+
+data WlrXdgToplevelEvents = WlrXdgToplevelEvents
+    { xdgToplevelEvtMaximize   :: Ptr (WlSignal WlrXdgSurface)
+    , xdgToplevelEvtFullscreen :: Ptr (WlSignal FullscreenEvent)
+    , xdgToplevelEvtMinimize   :: Ptr (WlSignal WlrXdgSurface)
+
+    , xdgToplevelEvtMove   :: Ptr (WlSignal MoveEvent)
+    , xdgToplevelEvtResize :: Ptr (WlSignal ResizeEvent)
+    , xdgToplevelEvtMenu   :: Ptr (WlSignal MenuEvent)
+    }
+
+getXdgToplevelEvents :: Ptr WlrXdgToplevel -> WlrXdgToplevelEvents
+getXdgToplevelEvents ptr = WlrXdgToplevelEvents
+    { xdgToplevelEvtMaximize = #{ptr struct wlr_xdg_toplevel_v6, events.request_maximize} ptr
+    , xdgToplevelEvtFullscreen = #{ptr struct wlr_xdg_toplevel_v6, events.request_fullscreen} ptr
+    , xdgToplevelEvtMinimize = #{ptr struct wlr_xdg_toplevel_v6, events.request_minimize} ptr
+
+    , xdgToplevelEvtMove = #{ptr struct wlr_xdg_toplevel_v6, events.request_move} ptr
+    , xdgToplevelEvtResize = #{ptr struct wlr_xdg_toplevel_v6, events.request_resize} ptr
+    , xdgToplevelEvtMenu = #{ptr struct wlr_xdg_toplevel_v6, events.request_show_window_menu} ptr
+    }
+
+getXdgToplevel :: Ptr WlrXdgSurface -> IO (Maybe (Ptr WlrXdgToplevel))
+getXdgToplevel ptr = do
+    ret <- #{peek struct wlr_xdg_surface_v6, toplevel} ptr
+    role :: CInt <- #{peek struct wlr_xdg_surface_v6, role} ptr
+    pure $ if role /= #{const WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL} || ret == nullPtr
+        then Nothing
+        else Just ret
 
 getXdgSurfaceDataPtr :: Ptr WlrXdgSurface -> Ptr (Ptr ())
 getXdgSurfaceDataPtr = #{ptr struct wlr_xdg_surface_v6, data}
@@ -232,7 +251,7 @@ xdgPopupAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
             pure $ Just (popup, newx, newy)
 
 
-foreign import ccall "wlr_xdg_toplevel_v6_send_close" c_close :: Ptr WlrXdgSurface -> IO ()
+foreign import ccall "wlr_xdg_surface_v6_send_close" c_close :: Ptr WlrXdgSurface -> IO ()
 
 sendClose :: Ptr WlrXdgSurface -> IO ()
 sendClose surf = do
@@ -304,8 +323,8 @@ getPopupGeometry :: Ptr WlrXdgSurface -> IO (Maybe WlrBox)
 getPopupGeometry surf = traverse #{peek struct wlr_xdg_popup_v6, geometry} =<< getPopupState surf
 
 
-getTitle :: Ptr WlrXdgSurface -> IO (Maybe Text)
-getTitle ptr = textFromNull =<< #{peek struct wlr_xdg_surface_v6, title} ptr
+getTitle :: Ptr WlrXdgToplevel -> IO (Maybe Text)
+getTitle ptr = textFromNull =<< #{peek struct wlr_xdg_toplevel_v6, title} ptr
 
-getAppId :: Ptr WlrXdgSurface -> IO (Maybe Text)
-getAppId ptr = textFromNull =<< #{peek struct wlr_xdg_surface_v6, app_id} ptr
+getAppId :: Ptr WlrXdgToplevel -> IO (Maybe Text)
+getAppId ptr = textFromNull =<< #{peek struct wlr_xdg_toplevel_v6, app_id} ptr

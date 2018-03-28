@@ -8,6 +8,7 @@ module Graphics.Wayland.WlRoots.Backend
 
     , BackendSignals (..)
     , backendGetSignals
+    , backendGetRenderer
     )
 where
 
@@ -19,6 +20,7 @@ import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Graphics.Wayland.WlRoots.Egl (EGL)
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
+import Graphics.Wayland.WlRoots.Render (Renderer)
 import Graphics.Wayland.Signal (WlSignal)
 
 data Backend
@@ -62,3 +64,8 @@ backendGetSignals ptr =
          , backendEvtOutput = output_add
          , backendEvtDestroy = destroy
          }
+
+foreign import ccall "wlr_backend_get_renderer" c_get_renderer :: Ptr Backend -> IO (Ptr Renderer)
+
+backendGetRenderer :: Ptr Backend -> IO (Ptr Renderer)
+backendGetRenderer = c_get_renderer

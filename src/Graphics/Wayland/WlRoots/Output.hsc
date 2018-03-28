@@ -53,6 +53,7 @@ module Graphics.Wayland.WlRoots.Output
     , getOutputDamage
     , outputFromResource
     , outputResourceForClient
+    , outputGetBackend
     )
 where
 
@@ -310,3 +311,6 @@ outputResourceForClient target output = do
         client <- resourceGetClient $ resourceFromLink link
         pure (client == target)
     pure . resourceFromLink $ head ret
+
+outputGetBackend :: Ptr WlrOutput -> IO (Ptr a)
+outputGetBackend = #{peek struct wlr_output, backend}

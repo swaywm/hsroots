@@ -84,8 +84,7 @@ matrixProjectBox (Matrix mat) box (OutputTransform transform) rotation (Matrix p
 
 printMatrix :: Handle -> Matrix -> IO ()
 printMatrix handle (Matrix p) = do
-    values :: [CFloat] <- mapM (peekElemOff p) [0 .. 15]
-    hPutStrLn handle . show $ take 4 $ drop 0  values
-    hPutStrLn handle . show $ take 4 $ drop 4  values
-    hPutStrLn handle . show $ take 4 $ drop 8  values
-    hPutStrLn handle . show $ take 4 $ drop 12 values
+    values :: [CFloat] <- mapM (peekElemOff p) [0 .. 8]
+    hPutStrLn handle . show $ take 3 $ drop 0  values
+    hPutStrLn handle . show $ take 3 $ drop 3  values
+    hPutStrLn handle . show $ take 3 $ drop 6  values
