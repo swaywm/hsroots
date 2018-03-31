@@ -44,8 +44,6 @@ data WlrTouchDown = WlrTouchDown
     , wlrTouchDownId     :: {-# UNPACK #-} !Int32
     , wlrTouchDownX      :: {-# UNPACK #-} !Double
     , wlrTouchDownY      :: {-# UNPACK #-} !Double
-    , wlrTouchDownWidth  :: {-# UNPACK #-} !Double
-    , wlrTouchDownHeight :: {-# UNPACK #-} !Double
     } deriving (Show)
 
 instance Storable WlrTouchDown where
@@ -55,10 +53,8 @@ instance Storable WlrTouchDown where
         <$> #{peek struct wlr_event_touch_down, device} ptr
         <*> #{peek struct wlr_event_touch_down, time_msec} ptr
         <*> #{peek struct wlr_event_touch_down, touch_id} ptr
-        <*> #{peek struct wlr_event_touch_down, x_mm} ptr
-        <*> #{peek struct wlr_event_touch_down, y_mm} ptr
-        <*> #{peek struct wlr_event_touch_down, width_mm} ptr
-        <*> #{peek struct wlr_event_touch_down, height_mm} ptr
+        <*> #{peek struct wlr_event_touch_down, x} ptr
+        <*> #{peek struct wlr_event_touch_down, y} ptr
     poke _ _ = error "We don't poke events (for now)"
 
 data WlrTouchUp = WlrTouchUp
@@ -82,8 +78,6 @@ data WlrTouchMotion = WlrTouchMotion
     , wlrTouchMotionId     :: {-# UNPACK #-} !Int32
     , wlrTouchMotionX      :: {-# UNPACK #-} !Double
     , wlrTouchMotionY      :: {-# UNPACK #-} !Double
-    , wlrTouchMotionWidth  :: {-# UNPACK #-} !Double
-    , wlrTouchMotionHeight :: {-# UNPACK #-} !Double
     } deriving (Show)
 
 instance Storable WlrTouchMotion where
@@ -93,10 +87,8 @@ instance Storable WlrTouchMotion where
         <$> #{peek struct wlr_event_touch_motion, device} ptr
         <*> #{peek struct wlr_event_touch_motion, time_msec} ptr
         <*> #{peek struct wlr_event_touch_motion, touch_id} ptr
-        <*> #{peek struct wlr_event_touch_motion, x_mm} ptr
-        <*> #{peek struct wlr_event_touch_motion, y_mm} ptr
-        <*> #{peek struct wlr_event_touch_motion, width_mm} ptr
-        <*> #{peek struct wlr_event_touch_motion, height_mm} ptr
+        <*> #{peek struct wlr_event_touch_motion, x} ptr
+        <*> #{peek struct wlr_event_touch_motion, y} ptr
     poke _ _ = error "We don't poke events (for now)"
 
 

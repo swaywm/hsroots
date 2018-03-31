@@ -109,9 +109,6 @@ data WlrEventPointerAbsMotion = WlrEventPointerAbsMotion
     , eventPointerAbsMotionTime :: Word32
     , eventPointerAbsMotionX :: Double
     , eventPointerAbsMotionY :: Double
-
-    , eventPointerAbsMotionWidth :: Double
-    , eventPointerAbsMotionHeight :: Double
     } deriving (Show, Eq)
 
 instance Storable WlrEventPointerAbsMotion where
@@ -120,31 +117,22 @@ instance Storable WlrEventPointerAbsMotion where
     peek ptr = do
         dev <- #{peek struct wlr_event_pointer_motion_absolute, device} ptr
         tsec :: Word32 <- #{peek struct wlr_event_pointer_motion_absolute, time_msec} ptr
-        x <- #{peek struct wlr_event_pointer_motion_absolute, x_mm} ptr
-        y <- #{peek struct wlr_event_pointer_motion_absolute, y_mm} ptr
-
-        width <- #{peek struct wlr_event_pointer_motion_absolute, width_mm} ptr
-        height <- #{peek struct wlr_event_pointer_motion_absolute, height_mm} ptr
+        x <- #{peek struct wlr_event_pointer_motion_absolute, x} ptr
+        y <- #{peek struct wlr_event_pointer_motion_absolute, y} ptr
 
         pure $ WlrEventPointerAbsMotion
             dev
             (fromIntegral tsec)
             x
             y
-            width
-            height
 
     poke ptr event = do
         #{poke struct wlr_event_pointer_motion_absolute, device} ptr $ eventPointerAbsMotionDevice event
         let tsec :: Word32 = fromIntegral $ eventPointerAbsMotionTime event
         #{poke struct wlr_event_pointer_motion_absolute, time_msec} ptr tsec
 
-        #{poke struct wlr_event_pointer_motion_absolute, x_mm} ptr $ eventPointerAbsMotionX event
-        #{poke struct wlr_event_pointer_motion_absolute, y_mm} ptr $ eventPointerAbsMotionY event
-
-        #{poke struct wlr_event_pointer_motion_absolute, width_mm} ptr $ eventPointerAbsMotionWidth event
-        #{poke struct wlr_event_pointer_motion_absolute, height_mm} ptr $ eventPointerAbsMotionHeight event
-
+        #{poke struct wlr_event_pointer_motion_absolute, x} ptr $ eventPointerAbsMotionX event
+        #{poke struct wlr_event_pointer_motion_absolute, y} ptr $ eventPointerAbsMotionY event
 
 
 data AxisSource

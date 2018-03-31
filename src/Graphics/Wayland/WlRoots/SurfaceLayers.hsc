@@ -1,7 +1,10 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Graphics.Wayland.WlRoots.SurfaceLayers
     ( LayerShell (..)
     , LayerShellEvents (..)
     , SurfaceState (..)
+    , LayerSurface (..)
+    , LayerShellLayer (..)
     , getLayerShellEvents
     , layerShellCreate
     , layerShellDestroy
@@ -9,17 +12,24 @@ module Graphics.Wayland.WlRoots.SurfaceLayers
     , configureSurface
     , closeSurface
 
-    , LayerSurfaceEvents
+    , getLayerSurfaceLayer
+    , LayerSurfaceEvents (..)
     , getLayerSurfaceEvents
 
     , getSurfaceState
+
+    , Anchor (..)
+    , getAnchorValue
     )
 where
 
 #include <wlr/types/wlr_layer_shell.h>
 
+
+
 import Data.Word (Word32)
 import Data.Int (Int32)
+import Foreign.C.Types (CInt)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.Ptr (Ptr, plusPtr)
 import Foreign.Storable
@@ -28,8 +38,29 @@ import Graphics.Wayland.Server (DisplayServer (..))
 
 import Graphics.Wayland.Signal (WlSignal)
 
+data LayerShellLayer
+    = LayerShellLayerBackground
+    | LayerShellLayerBottom
+    | LayerShellLayerTop
+    | LayerShellLayerOverlay
+    deriving (Eq, Show, Ord)
+
+data Anchor
+    = AnchorTop
+    | AnchorBottom
+    | AnchorLeft
+    | AnchorRight
+    deriving (Eq, Show)
+
+getAnchorValue :: Num a => Anchor -> a
+getAnchorValue AnchorBottom = #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM}
+getAnchorValue AnchorTop = #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP}
+getAnchorValue AnchorLeft = #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT}
+getAnchorValue AnchorRight = #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT}
+
+
 data LayerShell = LayerShell { unLS :: Ptr LayerShell }
-data LayerSurface = LayerSurface { unLSS :: Ptr LayerSurface }
+data LayerSurface = LayerSurface { unLSS :: Ptr LayerSurface } deriving (Eq, Show, Ord)
 
 data LayerShellEvents = LayerShellEvents
     { layerShellEventsSurface :: Ptr (WlSignal LayerSurface)
@@ -87,6 +118,18 @@ getLayerSurfaceEvents (LayerSurface ptr) = LayerSurfaceEvents
     , layerSurfaceEventsMap     = #{ptr struct wlr_layer_surface, events.map} ptr
     , layerSurfaceEventsUnmap   = #{ptr struct wlr_layer_surface, events.unmap} ptr
     }
+
+
+getLayerSurfaceLayer :: LayerSurface -> IO LayerShellLayer
+getLayerSurfaceLayer (LayerSurface ptr) = do
+    layer :: CInt <- #{peek struct wlr_layer_surface, layer} ptr
+    pure $ case layer of
+        #{const ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND} -> LayerShellLayerBackground
+        #{const ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM}     -> LayerShellLayerBottom
+        #{const ZWLR_LAYER_SHELL_V1_LAYER_TOP}        -> LayerShellLayerTop
+        #{const ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY}    -> LayerShellLayerOverlay
+        _ -> LayerShellLayerBottom
+
 
 instance Storable SurfaceState where
     sizeOf _ = #{size struct wlr_layer_surface_state}

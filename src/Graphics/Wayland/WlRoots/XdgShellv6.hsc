@@ -39,6 +39,14 @@ module Graphics.Wayland.WlRoots.XdgShellv6
     , WlrXdgPopup
     , xdgPopupGetBase
     , xdgGetPopupSurfaces
+    , getPopupPositioner
+
+    , XdgPosAnchor (..), XdgPosGravity (..), XdgPosAdjust (..)
+    , WlrXdgPositioner
+
+    , getPositionerGeometry
+    , getPopupAnchor
+    , unconstrainPopup
     )
 where
 
@@ -51,6 +59,7 @@ import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.C.Types (CInt)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.Marshal.Alloc (alloca)
+import Foreign.Marshal.Utils (with)
 import Foreign.StablePtr
     ( newStablePtr
     , castStablePtrToPtr
@@ -322,9 +331,64 @@ getPopupState surf = do
 getPopupGeometry :: Ptr WlrXdgSurface -> IO (Maybe WlrBox)
 getPopupGeometry surf = traverse #{peek struct wlr_xdg_popup_v6, geometry} =<< getPopupState surf
 
+getPopupPositioner :: Ptr WlrXdgPopup -> Ptr WlrXdgPositioner
+getPopupPositioner = #{ptr struct wlr_xdg_popup_v6, positioner}
 
 getTitle :: Ptr WlrXdgToplevel -> IO (Maybe Text)
 getTitle ptr = textFromNull =<< #{peek struct wlr_xdg_toplevel_v6, title} ptr
 
 getAppId :: Ptr WlrXdgToplevel -> IO (Maybe Text)
 getAppId ptr = textFromNull =<< #{peek struct wlr_xdg_toplevel_v6, app_id} ptr
+
+
+data XdgPosAnchor
+    = AnchorNone
+    | AnchorTop
+    | AnchorBottom
+    | AnchorLeft
+    | AnchorRight
+    deriving (Eq, Show)
+
+data XdgPosGravity
+    = GravityNone
+    | GravityTop
+    | GravityBottom
+    | GravityLeft
+    | GravityRight
+    deriving (Eq, Show)
+
+data XdgPosAdjust
+    = AdjustNone
+    | AdjustSlideX
+    | AdjustSlideY
+    | AdjustFlipX
+    | AdjustFlipY
+    | AdjustResizeX
+    | AdjustResizeY
+    deriving (Eq, Show)
+
+data WlrXdgPositioner
+
+foreign import ccall unsafe "wlr_xdg_positioner_v6_get_geometry_c" c_positioner_get_geometry :: Ptr WlrXdgPositioner -> Ptr WlrBox -> IO ()
+
+getPositionerGeometry :: Ptr WlrXdgPositioner -> IO WlrBox
+getPositionerGeometry pos = alloca $ \bPtr -> do
+    c_positioner_get_geometry pos bPtr
+    peek bPtr
+
+
+foreign import ccall unsafe "wlr_xdg_popup_v6_get_anchor_point" c_popup_get_anchor_point :: Ptr WlrXdgPopup -> Ptr CInt -> Ptr CInt -> IO ()
+
+getPopupAnchor :: Ptr WlrXdgPopup -> IO (Int, Int)
+getPopupAnchor pop = alloca $ \xPtr -> alloca $ \yPtr -> do
+    c_popup_get_anchor_point pop xPtr yPtr
+    x <- peek xPtr
+    y <- peek yPtr
+    pure (fromIntegral x, fromIntegral y)
+
+
+foreign import ccall unsafe "wlr_xdg_popup_v6_unconstrain_from_box" c_popup_unconstrain_from_box :: Ptr WlrXdgPopup -> Ptr WlrBox -> IO ()
+
+-- | Box in popups root toplevel coordinates
+unconstrainPopup :: Ptr WlrXdgPopup -> WlrBox -> IO ()
+unconstrainPopup pop box = with box $ c_popup_unconstrain_from_box pop

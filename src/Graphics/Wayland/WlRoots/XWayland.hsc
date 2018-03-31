@@ -189,8 +189,8 @@ getX11SurfaceEvents ptr = WlrX11SurfaceEvents
     , x11SurfaceEvtFullscreen = #{ptr struct wlr_xwayland_surface, events.request_fullscreen} ptr
     , x11SurfaceEvtMaximize = #{ptr struct wlr_xwayland_surface, events.request_maximize} ptr
 
-    , x11SurfaceEvtMap = #{ptr struct wlr_xwayland_surface, events.map_notify} ptr
-    , x11SurfaceEvtUnmap = #{ptr struct wlr_xwayland_surface, events.unmap_notify} ptr
+    , x11SurfaceEvtMap = #{ptr struct wlr_xwayland_surface, events.map} ptr
+    , x11SurfaceEvtUnmap = #{ptr struct wlr_xwayland_surface, events.unmap} ptr
     , x11SurfaceEvtTitle = #{ptr struct wlr_xwayland_surface, events.set_title} ptr
     , x11SurfaceEvtClass = #{ptr struct wlr_xwayland_surface, events.set_class} ptr
     , x11SurfaceEvtParent = #{ptr struct wlr_xwayland_surface, events.set_parent} ptr

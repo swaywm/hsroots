@@ -187,9 +187,9 @@ setCursorSurface cursor surface hotspotX hotspotY = c_set_surface cursor surface
 
 -- bool wlr_cursor_absolute_to_layout_coords(struct wlr_cursor *cur,struct wlr_input_device *device, double x_mm, double y_mm,double width_mm, double height_mm, double *lx, double *ly) {
 
-foreign import ccall unsafe "wlr_cursor_absolute_to_layout_coords" c_absolute_to_layout_coords :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> Double -> Double -> Ptr Double -> Ptr Double -> IO Word8
+foreign import ccall unsafe "wlr_cursor_absolute_to_layout_coords" c_absolute_to_layout_coords :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> Ptr Double -> Ptr Double -> IO Word8
 
-absCoordsToGlobal :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> Double -> Double -> IO (Double, Double)
-absCoordsToGlobal cursor dev x y w h = alloca $ \xptr -> alloca $ \yptr -> do
-    _ <- c_absolute_to_layout_coords cursor dev x y w h xptr yptr
+absCoordsToGlobal :: Ptr WlrCursor -> Ptr InputDevice -> Double -> Double -> IO (Double, Double)
+absCoordsToGlobal cursor dev x y = alloca $ \xptr -> alloca $ \yptr -> do
+    _ <- c_absolute_to_layout_coords cursor dev x y xptr yptr
     (,) <$> peek xptr <*> peek yptr

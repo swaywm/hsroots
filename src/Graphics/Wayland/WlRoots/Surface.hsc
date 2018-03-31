@@ -44,13 +44,14 @@ module Graphics.Wayland.WlRoots.Surface
     , peekSurfaceData
 
     , surfaceFromResource
+    , surfaceHasBuffer
     )
 where
 
 #include <wlr/types/wlr_surface.h>
 
 import Data.Composition ((.:))
-import Data.Word (Word32)
+import Data.Word (Word8, Word32)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CInt(..))
 import Foreign.Ptr (Ptr, castPtr, plusPtr, nullPtr)
@@ -238,3 +239,8 @@ foreign import ccall "wlr_surface_from_resource" c_from_resource :: Ptr WlResour
 
 surfaceFromResource :: Ptr WlResource -> IO (Ptr WlrSurface)
 surfaceFromResource = c_from_resource
+
+foreign import ccall "wlr_surface_has_buffer" c_has_buffer :: Ptr WlrSurface -> IO Word8
+
+surfaceHasBuffer :: Ptr WlrSurface -> IO Bool
+surfaceHasBuffer =  fmap (/= 0) . c_has_buffer

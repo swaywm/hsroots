@@ -61,8 +61,8 @@ pokeToolData = #{poke struct wlr_tablet_tool, data}
 
 
 data ToolAxis
-    = AxisX Double Double
-    | AxisY Double Double
+    = AxisX Double
+    | AxisY Double
     | AxisDistance Double
     | AxisPressure Double
     | AxisTiltX Double
@@ -73,8 +73,8 @@ data ToolAxis
     deriving (Eq, Show, Read)
 
 _toolAxisToInt :: Num a => ToolAxis -> a
-_toolAxisToInt (AxisX _ _ )     = #{const WLR_TABLET_TOOL_AXIS_X}
-_toolAxisToInt (AxisY _ _ )     = #{const WLR_TABLET_TOOL_AXIS_Y}
+_toolAxisToInt (AxisX _)        = #{const WLR_TABLET_TOOL_AXIS_X}
+_toolAxisToInt (AxisY _)        = #{const WLR_TABLET_TOOL_AXIS_Y}
 _toolAxisToInt (AxisDistance _) = #{const WLR_TABLET_TOOL_AXIS_DISTANCE}
 _toolAxisToInt (AxisPressure _) = #{const WLR_TABLET_TOOL_AXIS_PRESSURE}
 _toolAxisToInt (AxisTiltX _)    = #{const WLR_TABLET_TOOL_AXIS_TILT_X}
@@ -85,11 +85,9 @@ _toolAxisToInt (AxisWheel _)    = #{const WLR_TABLET_TOOL_AXIS_WHEEL}
 
 readToolAxis :: (Eq a, Num a) => a -> Ptr ToolAxisEvent -> Maybe (IO ToolAxis)
 readToolAxis #{const WLR_TABLET_TOOL_AXIS_X} ptr = Just $ AxisX
-    <$> #{peek struct wlr_event_tablet_tool_axis, x_mm} ptr
-    <*> #{peek struct wlr_event_tablet_tool_axis, width_mm} ptr
+    <$> #{peek struct wlr_event_tablet_tool_axis, x} ptr
 readToolAxis #{const WLR_TABLET_TOOL_AXIS_Y} ptr = Just $ AxisY
-    <$> #{peek struct wlr_event_tablet_tool_axis, y_mm} ptr
-    <*> #{peek struct wlr_event_tablet_tool_axis, height_mm} ptr
+    <$> #{peek struct wlr_event_tablet_tool_axis, y} ptr
 readToolAxis #{const WLR_TABLET_TOOL_AXIS_DISTANCE} ptr = Just $ AxisDistance
     <$> #{peek struct wlr_event_tablet_tool_axis, distance} ptr
 readToolAxis #{const WLR_TABLET_TOOL_AXIS_PRESSURE} ptr = Just $ AxisPressure
@@ -153,8 +151,6 @@ data ToolProximityEvent = ToolProximityEvent
     , toolProximityEvtTime   :: Word32
     , toolProximityEvtX      :: Double
     , toolProximityEvtY      :: Double
-    , toolProximityEvtWidth  :: Double
-    , toolProximityEvtHeight :: Double
     , toolProximityEvtState  :: ProximityState
     } deriving (Show)
 
@@ -164,10 +160,8 @@ instance Storable ToolProximityEvent where
     peek ptr = ToolProximityEvent
         <$> #{peek struct wlr_event_tablet_tool_proximity, device} ptr
         <*> #{peek struct wlr_event_tablet_tool_proximity, time_msec} ptr
-        <*> #{peek struct wlr_event_tablet_tool_proximity, x_mm} ptr
-        <*> #{peek struct wlr_event_tablet_tool_proximity, y_mm} ptr
-        <*> #{peek struct wlr_event_tablet_tool_proximity, width_mm} ptr
-        <*> #{peek struct wlr_event_tablet_tool_proximity, height_mm} ptr
+        <*> #{peek struct wlr_event_tablet_tool_proximity, x} ptr
+        <*> #{peek struct wlr_event_tablet_tool_proximity, y} ptr
         <*> #{peek struct wlr_event_tablet_tool_proximity, state} ptr
     poke _ _ = error "We don't poke ToolProximityEvents for now"
 
@@ -201,8 +195,6 @@ data ToolTipEvent = ToolTipEvent
     , toolTipEvtTime   :: Word32
     , toolTipEvtX      :: Double
     , toolTipEvtY      :: Double
-    , toolTipEvtWidth  :: Double
-    , toolTipEvtHeight :: Double
     , toolTipEvtState  :: TipState
     } deriving (Show)
 
@@ -212,10 +204,8 @@ instance Storable ToolTipEvent where
     peek ptr = ToolTipEvent
         <$> #{peek struct wlr_event_tablet_tool_tip, device} ptr
         <*> #{peek struct wlr_event_tablet_tool_tip, time_msec} ptr
-        <*> #{peek struct wlr_event_tablet_tool_tip, x_mm} ptr
-        <*> #{peek struct wlr_event_tablet_tool_tip, y_mm} ptr
-        <*> #{peek struct wlr_event_tablet_tool_tip, width_mm} ptr
-        <*> #{peek struct wlr_event_tablet_tool_tip, height_mm} ptr
+        <*> #{peek struct wlr_event_tablet_tool_tip, x} ptr
+        <*> #{peek struct wlr_event_tablet_tool_tip, y} ptr
         <*> #{peek struct wlr_event_tablet_tool_tip, state} ptr
     poke _ _ = error "We don't poke ToolTipEvents for now"
 

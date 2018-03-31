@@ -120,10 +120,11 @@ library
   Extra-libraries:     input
 
   c-sources:           cbits/signal.c
+  c-sources:           cbits/xdg_helpers.c
   PkgConfig-Depends:   pixman-1
   PkgConfig-Depends:   wlroots
+  include-dirs: protocol
 
   --build-depends: dump-core
   --ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html
   --ghc-options: -O2
-
