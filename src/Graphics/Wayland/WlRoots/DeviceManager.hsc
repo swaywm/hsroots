@@ -42,8 +42,9 @@ foreign import ccall "dynamic"
               -> Ptr WlrDataSource -> Ptr CChar -> Fd -> IO ()
 
 wrapSendFun :: WlrDataSource -> IO (Ptr WlrDataSource -> Ptr CChar -> Fd -> IO ())
-wrapSendFun =
-    fmap mkSendFun . #{peek struct wlr_data_source, send} . unDS
+wrapSendFun (WlrDataSource ptr) = do
+    impl <- #{peek struct wlr_data_source, impl} ptr
+    mkSendFun <$> #{peek struct wlr_data_source_impl, send} impl
 
 getSendFun :: WlrDataSource -> IO (Text -> Fd -> IO ())
 getSendFun source = do

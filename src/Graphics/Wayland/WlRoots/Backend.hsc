@@ -4,7 +4,6 @@ module Graphics.Wayland.WlRoots.Backend
     , backendAutocreate
     , backendStart
     , backendDestroy
-    , backendGetEgl
 
     , BackendSignals (..)
     , backendGetSignals
@@ -17,7 +16,6 @@ where
 import Foreign.Ptr (Ptr, plusPtr)
 import Graphics.Wayland.Server (DisplayServer(..))
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
-import Graphics.Wayland.WlRoots.Egl (EGL)
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Render (Renderer)
@@ -41,12 +39,6 @@ foreign import ccall safe "wlr_backend_destroy" c_backend_destroy :: Ptr Backend
 
 backendDestroy :: Ptr Backend -> IO ()
 backendDestroy = c_backend_destroy
-
-
-foreign import ccall unsafe "wlr_backend_get_egl" c_backend_get_egl :: Ptr Backend -> IO (Ptr EGL)
-
-backendGetEgl :: Ptr Backend -> IO (Ptr EGL)
-backendGetEgl = throwErrnoIfNull "backendGetEgl" . c_backend_get_egl
 
 data BackendSignals = BackendSignals
     { backendEvtInput   :: Ptr (WlSignal InputDevice)

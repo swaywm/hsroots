@@ -252,7 +252,7 @@ touchClearFocus = c_touch_point_clear_focus
 
 getSelectionSource :: Ptr WlrSeat -> IO (Maybe WlrDataSource)
 getSelectionSource ptr = do
-    ret <- #{peek struct wlr_seat, selection_data_source} ptr
+    ret <- #{peek struct wlr_seat, selection_source} ptr
     pure $ if ret /= nullPtr
         then Just $ WlrDataSource ret
         else Nothing

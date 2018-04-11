@@ -10,7 +10,7 @@ module Graphics.Wayland.WlRoots.WlShell
 
 
     , configureWlShellSurface
-    , shellPopupAt
+    , shellSurfaceAt
     , wlShellSurfaceGetSurface
 
     , getTitle
@@ -71,14 +71,14 @@ foreign import ccall unsafe "wlr_wl_shell_surface_configure" c_surface_configure
 configureWlShellSurface :: WlrWlShellSurface -> Int32 -> Int32 -> IO ()
 configureWlShellSurface (WlrWlShellSurface ptr) x y = c_surface_configure ptr 0 x y
 
-foreign import ccall unsafe "wlr_wl_shell_surface_popup_at" c_popup_at :: Ptr WlrWlShellSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrWlShellSurface)
+foreign import ccall unsafe "wlr_wl_shell_surface_surface_at" c_surface_at :: Ptr WlrWlShellSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrSurface)
 
-shellPopupAt :: WlrWlShellSurface -> Double -> Double -> IO (Maybe (WlrWlShellSurface, Double, Double))
-shellPopupAt (WlrWlShellSurface ptr) x y = alloca $ \xptr -> alloca $ \yptr -> do
-    ret <- c_popup_at ptr x y xptr yptr
+shellSurfaceAt :: WlrWlShellSurface -> Double -> Double -> IO (Maybe (Ptr WlrSurface, Double, Double))
+shellSurfaceAt (WlrWlShellSurface ptr) x y = alloca $ \xptr -> alloca $ \yptr -> do
+    ret <- c_surface_at ptr x y xptr yptr
     if ret == nullPtr
         then pure Nothing
-        else Just .: (WlrWlShellSurface ret, ,) <$> peek xptr <*> peek yptr
+        else Just .: (ret, ,) <$> peek xptr <*> peek yptr
 
 wlShellSurfaceGetSurface :: WlrWlShellSurface -> IO (Maybe (Ptr WlrSurface))
 wlShellSurfaceGetSurface (WlrWlShellSurface ptr) = do

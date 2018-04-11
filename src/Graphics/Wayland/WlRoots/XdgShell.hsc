@@ -31,7 +31,7 @@ module Graphics.Wayland.WlRoots.XdgShell
     , isConfigured
 
     , getPopupGeometry
-    , xdgPopupAt
+    , xdgSurfaceAt
 
     , getTitle
     , getAppId
@@ -238,11 +238,11 @@ getXdgToplevel ptr = do
 getXdgSurfaceDataPtr :: Ptr WlrXdgSurface -> Ptr (Ptr ())
 getXdgSurfaceDataPtr = #{ptr struct wlr_xdg_surface, data}
 
-foreign import ccall "wlr_xdg_surface_popup_at" c_popup_at :: Ptr WlrXdgSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrXdgSurface)
+foreign import ccall "wlr_xdg_surface_surface_at" c_surface_at :: Ptr WlrXdgSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrSurface)
 
-xdgPopupAt :: Ptr WlrXdgSurface -> Double -> Double -> IO (Maybe (Ptr WlrXdgSurface, Double, Double))
-xdgPopupAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
-    popup <- c_popup_at surf x y xptr yptr
+xdgSurfaceAt :: Ptr WlrXdgSurface -> Double -> Double -> IO (Maybe (Ptr WlrSurface, Double, Double))
+xdgSurfaceAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
+    popup <- c_surface_at surf x y xptr yptr
     if popup == nullPtr
         then pure Nothing
         else do

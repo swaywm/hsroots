@@ -7,7 +7,7 @@ module Graphics.Wayland.WlRoots.Surface
 
     , createSurface
     , makeSubsurface
-    , surfaceGetMain
+    , surfaceGetRoot
 
     , WlrSurfaceState
 
@@ -26,7 +26,7 @@ module Graphics.Wayland.WlRoots.Surface
     , surfaceGetInputRegion
 
     , getSurfaceResource
-    , subSurfaceAt
+    , surfaceAt
     , surfaceHasDamage
 
     , WlrSurfaceEvents (..)
@@ -105,10 +105,10 @@ makeSubsurface = c_make_subsurface
 surfaceGetTexture :: Ptr WlrSurface -> IO (Ptr Texture)
 surfaceGetTexture = #{peek struct wlr_surface, texture}
 
-foreign import ccall unsafe "wlr_surface_get_main_surface" c_get_main_surface :: Ptr WlrSurface -> IO (Ptr WlrSurface)
+foreign import ccall unsafe "wlr_surface_get_root_surface" c_get_root_surface :: Ptr WlrSurface -> IO (Ptr WlrSurface)
 
-surfaceGetMain :: Ptr WlrSurface -> IO (Ptr WlrSurface)
-surfaceGetMain = c_get_main_surface
+surfaceGetRoot :: Ptr WlrSurface -> IO (Ptr WlrSurface)
+surfaceGetRoot = c_get_root_surface
 
 
 data WlrSurfaceState
@@ -212,18 +212,17 @@ subSurfaceGetBox surf = stateGetSubsurfaceBox =<< getCurrentState =<< subSurface
 --struct wlr_subsurface *wlr_surface_subsurface_at(struct wlr_surface *surface,
 --surfacedouble sx, double sy, double *sub_x, double *sub_y);
 
-foreign import ccall "wlr_surface_subsurface_at" c_subsurface_at :: Ptr WlrSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrSubSurface)
+foreign import ccall "wlr_surface_surface_at" c_subsurface_at :: Ptr WlrSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrSurface)
 
-subSurfaceAt :: Ptr WlrSurface -> Double -> Double -> IO (Maybe (Ptr WlrSurface, Double, Double))
-subSurfaceAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
+surfaceAt :: Ptr WlrSurface -> Double -> Double -> IO (Maybe (Ptr WlrSurface, Double, Double))
+surfaceAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
     ret <- c_subsurface_at surf x y xptr yptr
     if ret == nullPtr
         then pure Nothing
         else do
             sX <- peek xptr
             sY <- peek yptr
-            retSurf <- subSurfaceGetSurface ret
-            pure $ Just (retSurf, x - sX, y - sY)
+            pure $ Just (ret, x - sX, y - sY)
 
 foreign import ccall "wlr_surface_send_enter" c_send_enter :: Ptr WlrSurface -> Ptr WlrOutput -> IO ()
 
