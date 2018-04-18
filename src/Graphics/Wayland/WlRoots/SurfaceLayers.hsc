@@ -20,23 +20,29 @@ module Graphics.Wayland.WlRoots.SurfaceLayers
 
     , Anchor (..)
     , getAnchorValue
+    , getMainAnchor
+    , useHeight, useWidth
+    , getSurfaceOutput
+    , getLayerSurfaceSurface
     )
 where
 
 #include <wlr/types/wlr_layer_shell.h>
 
 
-
+import Data.Bits (Bits((.&.)))
 import Data.Word (Word32)
 import Data.Int (Int32)
 import Foreign.C.Types (CInt)
 import Foreign.C.Error (throwErrnoIfNull)
-import Foreign.Ptr (Ptr, plusPtr)
+import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.Storable
 
 import Graphics.Wayland.Server (DisplayServer (..))
 
 import Graphics.Wayland.Signal (WlSignal)
+import Graphics.Wayland.WlRoots.Output (WlrOutput)
+import Graphics.Wayland.WlRoots.Surface (WlrSurface)
 
 data LayerShellLayer
     = LayerShellLayerBackground
@@ -51,6 +57,32 @@ data Anchor
     | AnchorLeft
     | AnchorRight
     deriving (Eq, Show)
+
+useHeight :: SurfaceState -> Word32 -> Word32
+useHeight state box =
+    let full = box - surfaceStateMarginBottom state - surfaceStateMarginTop state
+     in case surfaceStateAnchor state .&. #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP} of
+        #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP} -> full
+        _ -> min full (surfaceStateDesiredHeight state)
+
+useWidth :: SurfaceState -> Word32 -> Word32
+useWidth state box =
+    let full = box - surfaceStateMarginLeft state - surfaceStateMarginTop state
+     in case surfaceStateAnchor state .&. #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT} of
+        #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT} -> full
+        _ -> min full (surfaceStateDesiredWidth state)
+
+getMainAnchor :: (Num a, Eq a) => a -> Maybe Anchor
+getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM} = Just AnchorBottom
+getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP} = Just AnchorTop
+getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT} = Just AnchorLeft
+getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT} = Just AnchorRight
+getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT} = Just AnchorBottom
+getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT} = Just AnchorTop
+getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP} = Just AnchorLeft
+getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP} = Just AnchorRight
+getMainAnchor _ = Nothing
+
 
 getAnchorValue :: Num a => Anchor -> a
 getAnchorValue AnchorBottom = #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM}
@@ -150,3 +182,14 @@ instance Storable SurfaceState where
 
 getSurfaceState :: LayerSurface -> IO SurfaceState
 getSurfaceState = #{peek struct wlr_layer_surface, current} . unLSS
+
+
+getSurfaceOutput :: LayerSurface -> IO (Ptr WlrOutput)
+getSurfaceOutput = #{peek struct wlr_layer_surface, output} . unLSS
+
+getLayerSurfaceSurface :: LayerSurface -> IO (Maybe (Ptr WlrSurface))
+getLayerSurfaceSurface (LayerSurface ptr) = do
+    ret <- #{peek struct wlr_layer_surface, surface} ptr
+    pure $ case ret /= nullPtr of
+        True -> Just ret
+        False -> Nothing
