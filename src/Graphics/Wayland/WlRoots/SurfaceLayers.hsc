@@ -24,6 +24,8 @@ module Graphics.Wayland.WlRoots.SurfaceLayers
     , useHeight, useWidth
     , getSurfaceOutput
     , getLayerSurfaceSurface
+
+    , Corner (..), getAnchorCorner
     )
 where
 
@@ -82,6 +84,21 @@ getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_A
 getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP} = Just AnchorLeft
 getMainAnchor #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP} = Just AnchorRight
 getMainAnchor _ = Nothing
+
+data Corner
+    = TopLeft
+    | TopRight
+    | BottomLeft
+    | BottomRight
+    deriving (Eq, Show)
+
+getAnchorCorner :: (Num a, Eq a) => a -> Maybe Corner
+getAnchorCorner #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT} = Just TopLeft
+getAnchorCorner #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT} = Just TopRight
+getAnchorCorner #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT} = Just BottomLeft
+getAnchorCorner #{const ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT} = Just BottomRight
+getAnchorCorner _ = Nothing
+
 
 
 getAnchorValue :: Num a => Anchor -> a

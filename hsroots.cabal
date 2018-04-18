@@ -86,7 +86,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Seat
   exposed-modules:     Graphics.Wayland.WlRoots.ServerDecoration
   exposed-modules:     Graphics.Wayland.WlRoots.Surface
-  --exposed-modules:     Graphics.Wayland.WlRoots.SurfaceLayers
+  exposed-modules:     Graphics.Wayland.WlRoots.SurfaceLayers
   exposed-modules:     Graphics.Wayland.WlRoots.Util
   exposed-modules:     Graphics.Wayland.WlRoots.Util.Region
   exposed-modules:     Graphics.Wayland.WlRoots.WlShell
