@@ -10,6 +10,7 @@ module Graphics.Wayland.Signal
     , addListener
     , removeListener
     , destroyListener
+    , setSignalHandler
     , setDestroyHandler
     , addDestroyListener
     )
@@ -81,6 +82,10 @@ removeListener' ptr =
          -- try to remove the element again
          c_list_remove link
          c_list_init link
+
+-- | Set a 'Way' action as signal handler.
+setSignalHandler :: Ptr (WlSignal a) -> (Ptr a -> IO ()) -> IO ListenerToken
+setSignalHandler signal act = addListener (WlListener act) signal
 
 -- | Set a signal handler that will remove itself after it's fired once. This
 -- can be used for destroy handlers that don't have to be stored anywhere.
