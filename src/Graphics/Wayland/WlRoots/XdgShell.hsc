@@ -39,6 +39,8 @@ module Graphics.Wayland.WlRoots.XdgShell
     , WlrXdgPopup
     , xdgPopupGetBase
     , xdgGetPopupSurfaces
+
+    , unconstrainPopup
     )
 where
 
@@ -51,6 +53,7 @@ import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.C.Types (CInt)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.Marshal.Alloc (alloca)
+import Foreign.Marshal.Utils (with)
 import Foreign.StablePtr
     ( newStablePtr
     , castStablePtrToPtr
@@ -327,3 +330,9 @@ getTitle ptr = textFromNull =<< #{peek struct wlr_xdg_toplevel, title} ptr
 
 getAppId :: Ptr WlrXdgToplevel -> IO (Maybe Text)
 getAppId ptr = textFromNull =<< #{peek struct wlr_xdg_toplevel, app_id} ptr
+
+foreign import ccall unsafe "wlr_xdg_popup_unconstrain_from_box" c_popup_unconstrain_from_box :: Ptr WlrXdgPopup -> Ptr WlrBox -> IO ()
+
+-- | Box in popups root toplevel coordinates
+unconstrainPopup :: Ptr WlrXdgPopup -> WlrBox -> IO ()
+unconstrainPopup pop box = with box $ c_popup_unconstrain_from_box pop

@@ -203,7 +203,7 @@ subSurfaceGetSurface = #{peek struct wlr_subsurface, surface}
 
 surfaceGetSubs :: Ptr WlrSurface -> IO [Ptr WlrSubSurface]
 surfaceGetSubs surf = do
-    let list = #{ptr struct wlr_surface, subsurface_list} surf
+    let list = #{ptr struct wlr_surface, subsurfaces} surf
     getListFromHead list #{offset struct wlr_subsurface, parent_link}
 
 subSurfaceGetBox :: Ptr WlrSubSurface -> IO WlrBox
