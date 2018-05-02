@@ -311,11 +311,15 @@ xdgGetPopupSurfaces surf =
 
 data WlrXdgPopup
 
-getPopupState :: Ptr WlrXdgSurface -> IO (Ptr WlrXdgPopup)
-getPopupState = #{peek struct wlr_xdg_surface, popup}
+getPopupState :: Ptr WlrXdgSurface -> IO (Maybe (Ptr WlrXdgPopup))
+getPopupState surf = do
+    ret <- #{peek struct wlr_xdg_surface, popup} surf
+    pure $ if ret /= nullPtr
+        then Just ret
+        else Nothing
 
-getPopupGeometry :: Ptr WlrXdgSurface -> IO WlrBox
-getPopupGeometry surf = #{peek struct wlr_xdg_popup, geometry} =<< getPopupState surf
+getPopupGeometry :: Ptr WlrXdgSurface -> IO (Maybe WlrBox)
+getPopupGeometry surf = traverse #{peek struct wlr_xdg_popup, geometry} =<< getPopupState surf
 
 
 getTitle :: Ptr WlrXdgToplevel -> IO (Maybe Text)
