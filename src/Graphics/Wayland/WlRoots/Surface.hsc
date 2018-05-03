@@ -6,7 +6,6 @@ module Graphics.Wayland.WlRoots.Surface
     , surfaceGetTexture
 
     , createSurface
-    , makeSubsurface
     , surfaceGetRoot
 
     , WlrSurfaceState
@@ -96,11 +95,6 @@ getWlrSurfaceEvents ptr = WlrSurfaceEvents
     , wlrSurfaceEvtSubSurf = #{ptr struct wlr_surface, events.new_subsurface} ptr
     , wlrSurfaceEvtCommit = #{ptr struct wlr_surface, events.commit} ptr
     }
-
-foreign import ccall unsafe "wlr_surface_make_subsurface" c_make_subsurface :: Ptr WlrSurface -> Ptr WlrSurface -> Word32 -> IO ()
-
-makeSubsurface :: Ptr WlrSurface -> Ptr WlrSurface -> Word32 -> IO ()
-makeSubsurface = c_make_subsurface
 
 surfaceGetTexture :: Ptr WlrSurface -> IO (Ptr Texture)
 surfaceGetTexture = #{peek struct wlr_surface, texture}
