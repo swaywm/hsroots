@@ -216,7 +216,7 @@ surfaceAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
         else do
             sX <- peek xptr
             sY <- peek yptr
-            pure $ Just (ret, x - sX, y - sY)
+            pure $ Just (ret, sX, sY)
 
 foreign import ccall "wlr_surface_send_enter" c_send_enter :: Ptr WlrSurface -> Ptr WlrOutput -> IO ()
 
