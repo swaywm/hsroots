@@ -188,6 +188,10 @@ zwlr_layer_shell_v1_destroy(struct zwlr_layer_shell_v1 *zwlr_layer_shell_v1)
  * or manipulate a buffer prior to the first layer_surface.configure call
  * must also be treated as errors.
  *
+ * You may pass NULL for output to allow the compositor to decide which
+ * output to use. Generally this will be the one that the user most
+ * recently interacted with.
+ *
  * Clients can specify a namespace that defines the purpose of the layer
  * surface.
  */
@@ -428,7 +432,7 @@ zwlr_layer_surface_v1_set_anchor(struct zwlr_layer_surface_v1 *zwlr_layer_surfac
  * how they should interact with surfaces that do. If set to zero, the
  * surface indicates that it would like to be moved to avoid occluding
  * surfaces with a positive excluzive zone. If set to -1, the surface
- * indicates that it would not like to be moved to accomodate for other
+ * indicates that it would not like to be moved to accommodate for other
  * surfaces, and the compositor should extend it all the way to the edges
  * it is anchored to.
  *

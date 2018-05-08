@@ -26,11 +26,13 @@ module Graphics.Wayland.WlRoots.SurfaceLayers
     , getLayerSurfaceSurface
 
     , Corner (..), getAnchorCorner
+
+    , getPopups
     )
 where
 
 #include <wlr/types/wlr_layer_shell.h>
-
+#include <wlr/types/wlr_xdg_shell.h>
 
 import Data.Bits (Bits((.&.)))
 import Data.Word (Word32)
@@ -42,9 +44,12 @@ import Foreign.Storable
 
 import Graphics.Wayland.Server (DisplayServer (..))
 
+import Graphics.Wayland.List (getListFromHead)
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
+
+import Graphics.Wayland.WlRoots.XdgShell (WlrXdgPopup)
 
 data LayerShellLayer
     = LayerShellLayerBackground
@@ -159,6 +164,7 @@ data LayerSurfaceEvents = LayerSurfaceEvents
     { layerSurfaceEventsDestroy :: Ptr (WlSignal LayerSurface)
     , layerSurfaceEventsMap     :: Ptr (WlSignal LayerSurface)
     , layerSurfaceEventsUnmap   :: Ptr (WlSignal LayerSurface)
+    , layerSurfaceEventsPopup   :: Ptr (WlSignal WlrXdgPopup)
     }
 
 getLayerSurfaceEvents :: LayerSurface -> LayerSurfaceEvents
@@ -166,6 +172,7 @@ getLayerSurfaceEvents (LayerSurface ptr) = LayerSurfaceEvents
     { layerSurfaceEventsDestroy = #{ptr struct wlr_layer_surface, events.destroy} ptr
     , layerSurfaceEventsMap     = #{ptr struct wlr_layer_surface, events.map} ptr
     , layerSurfaceEventsUnmap   = #{ptr struct wlr_layer_surface, events.unmap} ptr
+    , layerSurfaceEventsPopup   = #{ptr struct wlr_layer_surface, events.new_popup} ptr
     }
 
 
@@ -210,3 +217,8 @@ getLayerSurfaceSurface (LayerSurface ptr) = do
     pure $ case ret /= nullPtr of
         True -> Just ret
         False -> Nothing
+
+getPopups :: LayerSurface -> IO [Ptr WlrXdgPopup]
+getPopups (LayerSurface surf) = do
+    let list = #{ptr struct wlr_layer_surface, popups} surf
+    getListFromHead list #{offset struct wlr_xdg_popup, link}
