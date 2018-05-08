@@ -23,6 +23,7 @@ module Graphics.Wayland.WlRoots.SurfaceLayers
     , getMainAnchor
     , useHeight, useWidth
     , getSurfaceOutput
+    , setSurfaceOutput
     , getLayerSurfaceSurface
 
     , Corner (..), getAnchorCorner
@@ -210,6 +211,9 @@ getSurfaceState = #{peek struct wlr_layer_surface, current} . unLSS
 
 getSurfaceOutput :: LayerSurface -> IO (Ptr WlrOutput)
 getSurfaceOutput = #{peek struct wlr_layer_surface, output} . unLSS
+
+setSurfaceOutput :: LayerSurface -> Ptr WlrOutput -> IO ()
+setSurfaceOutput surf out = #{poke struct wlr_layer_surface, output} (unLSS surf) out
 
 getLayerSurfaceSurface :: LayerSurface -> IO (Maybe (Ptr WlrSurface))
 getLayerSurfaceSurface (LayerSurface ptr) = do
