@@ -89,10 +89,13 @@ foreign import ccall unsafe "wlr_texture_get_size" c_get_size :: Ptr Texture -> 
 
 getTextureSize :: Ptr Texture -> IO (Int, Int)
 getTextureSize ptr = do
-    (widthPtr, heightPtr) <- alloca $ \widthPtr -> alloca $ \heightPtr -> c_get_size ptr widthPtr heightPtr >> return (widthPtr, heightPtr)
-    width <- peek widthPtr
-    height <- peek heightPtr
+    (width, height) <- alloca $ \widthPtr -> alloca $ \heightPtr -> c_get_size ptr widthPtr heightPtr >> peekTextureSize widthPtr heightPtr
     pure (fromIntegral width, fromIntegral height)
+    where peekTextureSize :: Ptr CInt -> Ptr CInt -> IO (CInt, CInt)
+          peekTextureSize widthPtr heightPtr = do
+              width <- peek widthPtr
+              height <- peek heightPtr
+              pure (width, height)
 
 foreign import ccall unsafe "wlr_renderer_scissor" c_scissor :: Ptr Renderer -> Ptr WlrBox -> IO ()
 
