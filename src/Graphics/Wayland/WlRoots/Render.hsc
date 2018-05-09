@@ -21,12 +21,13 @@ module Graphics.Wayland.WlRoots.Render
     )
 where
 
-#include <wlr/render.h>
+#include <wlr/render/wlr_renderer.h>
 
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr, nullPtr)
 import Foreign.C.Error ({-throwErrnoIfNull, -}throwErrnoIf_)
 import Foreign.C.Types (CFloat(..), CInt(..))
+import Foreign.Marshal.Alloc (alloca)
 import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Render.Color (Color)
 import Graphics.Wayland.WlRoots.Output (WlrOutput, getWidth, getHeight)
@@ -84,11 +85,17 @@ foreign import ccall unsafe "wlr_renderer_clear" c_clear :: Ptr Renderer -> Ptr 
 rendererClear :: Ptr Renderer -> Color -> IO ()
 rendererClear rend col = with col $ c_clear rend
 
+foreign import ccall unsafe "wlr_texture_get_size" c_get_size :: Ptr Texture -> Ptr CInt -> Ptr CInt -> IO ()
+
 getTextureSize :: Ptr Texture -> IO (Int, Int)
 getTextureSize ptr = do
-    width :: CInt <- #{peek struct wlr_texture, width} ptr
-    height :: CInt <- #{peek struct wlr_texture, height} ptr
+    (width, height) <- alloca $ \widthPtr -> alloca $ \heightPtr -> c_get_size ptr widthPtr heightPtr >> peekTextureSize widthPtr heightPtr
     pure (fromIntegral width, fromIntegral height)
+    where peekTextureSize :: Ptr CInt -> Ptr CInt -> IO (CInt, CInt)
+          peekTextureSize widthPtr heightPtr = do
+              width <- peek widthPtr
+              height <- peek heightPtr
+              pure (width, height)
 
 foreign import ccall unsafe "wlr_renderer_scissor" c_scissor :: Ptr Renderer -> Ptr WlrBox -> IO ()
 
