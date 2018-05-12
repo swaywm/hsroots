@@ -2,7 +2,6 @@
 module Graphics.Wayland.WlRoots.Egl
     ( EGL
     , eglInit
-    , eglFree
     , eglBindDisplay
     )
 where
@@ -22,12 +21,6 @@ foreign import ccall unsafe "wlr_egl_init" c_egl_init :: Ptr EGL -> CInt -> Ptr 
 eglInit :: Ptr EGL -> Platform -> Ptr a -> IO ()
 eglInit e p d = let num = getPlatform p in
     throwErrnoIf_ not "eglInit" (c_egl_init e num d)
-
-
-foreign import ccall unsafe "wlr_egl_free" c_egl_free :: Ptr EGL -> IO ()
-
-eglFree :: Ptr EGL -> IO ()
-eglFree = c_egl_free
 
 
 foreign import ccall unsafe "wlr_egl_bind_display" c_egl_bind_display :: Ptr EGL -> Ptr Display -> IO Bool

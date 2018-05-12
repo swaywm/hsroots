@@ -150,11 +150,11 @@ pointerNotifyButton :: Ptr WlrSeat -> Word32 -> Word32 -> ButtonState -> IO ()
 pointerNotifyButton seat time button state =
     c_notify_button seat time button (buttonStateToInt state)
 
-foreign import ccall "wlr_seat_pointer_notify_axis" c_pointer_notify_axis :: Ptr WlrSeat -> Word32 -> CInt -> Double -> IO ()
+foreign import ccall "wlr_seat_pointer_notify_axis" c_pointer_notify_axis :: Ptr WlrSeat -> Word32 -> CInt -> Double -> Int32 -> IO ()
 
-pointerNotifyAxis :: Ptr WlrSeat -> Word32 -> AxisOrientation -> Double -> IO ()
-pointerNotifyAxis seat time orientation value =
-    c_pointer_notify_axis seat time (axisOToInt orientation) value
+pointerNotifyAxis :: Ptr WlrSeat -> Word32 -> AxisOrientation -> Double -> Int32 -> IO ()
+pointerNotifyAxis seat time orientation value discrete =
+    c_pointer_notify_axis seat time (axisOToInt orientation) value discrete
 
 foreign import ccall "wlr_seat_keyboard_notify_key" c_notify_key :: Ptr WlrSeat -> Word32 -> Word32 -> Word32 -> IO ()
 

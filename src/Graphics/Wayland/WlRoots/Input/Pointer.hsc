@@ -18,6 +18,7 @@ where
 
 #include <wlr/types/wlr_pointer.h>
 
+import Data.Int (Int32)
 import Data.Word (Word32)
 import Foreign.C.Types (CInt(..))
 import Foreign.Ptr (Ptr, plusPtr, castPtr)
@@ -188,6 +189,7 @@ data WlrEventPointerAxis = WlrEventPointerAxis
     , eventPointerAxisSource      :: AxisSource
     , eventPointerAxisOrientation :: AxisOrientation
     , eventPointerAxisDelta       :: Double
+    , eventPointerAxisDiscrete    :: Int32
     } deriving (Show, Eq)
 
 
@@ -201,9 +203,11 @@ instance Storable WlrEventPointerAxis where
         <*> #{peek struct wlr_event_pointer_axis, source} ptr
         <*> #{peek struct wlr_event_pointer_axis, orientation} ptr
         <*> #{peek struct wlr_event_pointer_axis, delta} ptr
+        <*> #{peek struct wlr_event_pointer_axis, delta_discrete} ptr
     poke ptr event = do
         #{poke struct wlr_event_pointer_axis, device} ptr      $ eventPointerAxisDevice      event
         #{poke struct wlr_event_pointer_axis, time_msec} ptr   $ eventPointerAxisTime        event
         #{poke struct wlr_event_pointer_axis, source} ptr      $ eventPointerAxisSource      event
         #{poke struct wlr_event_pointer_axis, orientation} ptr $ eventPointerAxisOrientation event
         #{poke struct wlr_event_pointer_axis, delta} ptr       $ eventPointerAxisDelta       event
+        #{poke struct wlr_event_pointer_axis, delta_discrete} ptr       $ eventPointerAxisDiscrete       event
