@@ -61,11 +61,11 @@ import Utility (textFromNull)
 
 data XWayland
 
-foreign import ccall unsafe "wlr_xwayland_create" c_xwayland_create :: Ptr DisplayServer -> Ptr WlrCompositor -> IO (Ptr XWayland)
+foreign import ccall unsafe "wlr_xwayland_create" c_xwayland_create :: Ptr DisplayServer -> Ptr WlrCompositor -> Bool -> IO (Ptr XWayland)
 
-xwaylandCreate :: DisplayServer -> Ptr WlrCompositor -> IO (Ptr XWayland)
-xwaylandCreate (DisplayServer ptr) comp =
-    throwErrnoIfNull "xwaylandCreate" $ c_xwayland_create ptr comp
+xwaylandCreate :: DisplayServer -> Ptr WlrCompositor -> Bool -> IO (Ptr XWayland)
+xwaylandCreate (DisplayServer ptr) comp lazy =
+    throwErrnoIfNull "xwaylandCreate" $ c_xwayland_create ptr comp lazy
 
 foreign import ccall "wlr_xwayland_destroy" c_xwayland_destroy :: Ptr XWayland -> IO ()
 
