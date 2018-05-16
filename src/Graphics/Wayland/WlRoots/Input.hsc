@@ -13,6 +13,7 @@ module Graphics.Wayland.WlRoots.Input
     , inputDeviceType
     , getDestroySignal
     , getDeviceName
+    , getCleanDeviceName
     )
 where
 
@@ -69,8 +70,15 @@ inputDeviceType ptr = do
 getDestroySignal :: Ptr InputDevice -> Ptr (WlSignal (InputDevice))
 getDestroySignal = #{ptr struct wlr_input_device, events.destroy}
 
+-- | Get device name + hexadecimal value pointer. This enforces that every
+-- device has a unique name for logging/IPC, but isn't deterministic or pretty
 getDeviceName :: Ptr InputDevice -> IO Text
 getDeviceName ptr = do
     name <- fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_input_device, name} ptr
     let pos = T.pack $ ' ':show ptr
     pure $ name `T.append` pos
+
+-- | Get clean device name
+getCleanDeviceName :: Ptr InputDevice -> IO Text
+getCleanDeviceName ptr =
+    fmap E.decodeUtf8 . unsafePackCString =<< #{peek struct wlr_input_device, name} ptr
