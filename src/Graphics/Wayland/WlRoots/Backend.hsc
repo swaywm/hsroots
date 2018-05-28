@@ -13,7 +13,7 @@ where
 
 #include <wlr/backend.h>
 
-import Foreign.Ptr (Ptr, plusPtr)
+import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Graphics.Wayland.Server (DisplayServer(..))
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
@@ -23,10 +23,10 @@ import Graphics.Wayland.Signal (WlSignal)
 
 data Backend
 
-foreign import ccall unsafe "wlr_backend_autocreate" c_backend_autocreate :: Ptr DisplayServer -> IO (Ptr Backend)
+foreign import ccall unsafe "wlr_backend_autocreate" c_backend_autocreate :: Ptr DisplayServer -> Ptr a -> IO (Ptr Backend)
 
 backendAutocreate :: DisplayServer -> IO (Ptr Backend)
-backendAutocreate (DisplayServer ptr) = throwErrnoIfNull "backendAutocreate" $ c_backend_autocreate ptr
+backendAutocreate (DisplayServer ptr) = throwErrnoIfNull "backendAutocreate" $ c_backend_autocreate ptr nullPtr
 
 
 foreign import ccall safe "wlr_backend_start" c_backend_start :: Ptr Backend -> IO Bool
