@@ -18,22 +18,26 @@ module Graphics.Wayland.WlRoots.Render
 
     , rendererScissor
     , rendererClear
+
+    , initWlDisplay
     )
 where
 
 #include <wlr/render/wlr_renderer.h>
 
-import Foreign.Storable (Storable(..))
-import Foreign.Ptr (Ptr, nullPtr)
+import Control.Exception (bracket_)
 import Foreign.C.Error ({-throwErrnoIfNull, -}throwErrnoIf_)
 import Foreign.C.Types (CFloat(..), CInt(..))
 import Foreign.Marshal.Alloc (alloca)
-import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
-import Graphics.Wayland.WlRoots.Render.Color (Color)
-import Graphics.Wayland.WlRoots.Output (WlrOutput, getWidth, getHeight)
 import Foreign.Marshal.Utils (with)
-import Control.Exception (bracket_)
+import Foreign.Ptr (Ptr, nullPtr)
+import Foreign.Storable (Storable(..))
 
+import Graphics.Wayland.Server (DisplayServer (..))
+
+import Graphics.Wayland.WlRoots.Output (WlrOutput, getWidth, getHeight)
+import Graphics.Wayland.WlRoots.Render.Color (Color)
+import Graphics.Wayland.WlRoots.Render.Matrix (Matrix(..))
 import Graphics.Wayland.WlRoots.Box (WlrBox)
 
 data Renderer
@@ -102,3 +106,9 @@ foreign import ccall unsafe "wlr_renderer_scissor" c_scissor :: Ptr Renderer -> 
 rendererScissor :: Ptr Renderer -> Maybe WlrBox -> IO ()
 rendererScissor rend (Just box) = with box $ c_scissor rend
 rendererScissor rend Nothing =  c_scissor rend nullPtr
+
+
+foreign import ccall unsafe "wlr_renderer_init_wl_display" c_init_display :: Ptr Renderer -> Ptr DisplayServer -> IO ()
+
+initWlDisplay :: DisplayServer -> Ptr Renderer -> IO ()
+initWlDisplay (DisplayServer dsp) rend = c_init_display rend dsp
