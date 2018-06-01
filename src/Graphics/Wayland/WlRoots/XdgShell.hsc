@@ -263,10 +263,12 @@ sendClose surf = do
         (role == #{const WLR_XDG_SURFACE_ROLE_TOPLEVEL})
         (c_close surf)
 
+foreign import ccall "wlr_xdg_surface_get_geometry" c_get_geometry :: Ptr WlrXdgSurface -> Ptr WlrBox -> IO ()
 
 getGeometry :: Ptr WlrXdgSurface -> IO WlrBox
-getGeometry ptr = #{peek struct wlr_xdg_surface, geometry} ptr
-
+getGeometry ptr = alloca $ \boxPtr -> do
+    c_get_geometry ptr boxPtr
+    peek boxPtr
 
 foreign import ccall "wlr_xdg_toplevel_set_size" c_set_size :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO ()
 
