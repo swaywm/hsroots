@@ -50,6 +50,7 @@ where
 #include <wlr/types/wlr_surface.h>
 
 import Data.Composition ((.:))
+import Data.Int (Int32)
 import Data.Word (Word8, Word32)
 import Foreign.C.Error (throwErrnoIfNull)
 import Foreign.C.Types (CInt(..))
@@ -109,8 +110,8 @@ data WlrSurfaceState
 
 stateGetSubsurfaceBox :: Ptr WlrSurfaceState -> IO WlrBox
 stateGetSubsurfaceBox state = do
-    x :: Word32 <- #{peek struct wlr_surface_state, subsurface_position.x} state
-    y :: Word32 <- #{peek struct wlr_surface_state, subsurface_position.y} state
+    x :: Int32 <- #{peek struct wlr_surface_state, subsurface_position.x} state
+    y :: Int32 <- #{peek struct wlr_surface_state, subsurface_position.y} state
 
     width :: CInt <- #{peek struct wlr_surface_state, width} state
     height :: CInt <- #{peek struct wlr_surface_state, height} state
