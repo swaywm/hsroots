@@ -191,8 +191,7 @@ instance Storable FullscreenEvent where
         #{poke struct wlr_xdg_toplevel_set_fullscreen_event, output} ptr $ fullscreenEvtOutput evt
 
 data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
-    { xdgSurfaceEvtCommit  :: Ptr (WlSignal WlrXdgSurface)
-    , xdgSurfaceEvtDestroy :: Ptr (WlSignal WlrXdgSurface)
+    { xdgSurfaceEvtDestroy :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtTimeout :: Ptr (WlSignal WlrXdgSurface)
     , xdgSurfaceEvtPopup   :: Ptr (WlSignal WlrXdgPopup)
     , xdgSurfaceEvtMap     :: Ptr (WlSignal WlrXdgSurface)
@@ -202,7 +201,6 @@ data WlrXdgSurfaceEvents = WlrXdgSurfaceEvents
 getXdgSurfaceEvents :: Ptr WlrXdgSurface -> WlrXdgSurfaceEvents
 getXdgSurfaceEvents ptr = WlrXdgSurfaceEvents
     { xdgSurfaceEvtDestroy = #{ptr struct wlr_xdg_surface, events.destroy} ptr
-    , xdgSurfaceEvtCommit = #{ptr struct wlr_xdg_surface, events.destroy} ptr
     , xdgSurfaceEvtTimeout = #{ptr struct wlr_xdg_surface, events.ping_timeout} ptr
     , xdgSurfaceEvtPopup = #{ptr struct wlr_xdg_surface, events.new_popup} ptr
     , xdgSurfaceEvtMap = #{ptr struct wlr_xdg_surface, events.map} ptr
