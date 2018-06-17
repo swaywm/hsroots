@@ -97,8 +97,14 @@ getWlrSurfaceEvents ptr = WlrSurfaceEvents
     , wlrSurfaceEvtCommit = #{ptr struct wlr_surface, events.commit} ptr
     }
 
-surfaceGetTexture :: Ptr WlrSurface -> IO (Ptr Texture)
-surfaceGetTexture = #{peek struct wlr_surface, texture}
+foreign import ccall unsafe "wlr_surface_get_texture" c_get_texture :: Ptr WlrSurface -> IO (Ptr Texture)
+
+surfaceGetTexture :: Ptr WlrSurface -> IO (Maybe (Ptr Texture))
+surfaceGetTexture ptr = do
+    ret <- c_get_texture ptr
+    pure $ if ret == nullPtr
+        then Nothing
+        else Just ret
 
 foreign import ccall unsafe "wlr_surface_get_root_surface" c_get_root_surface :: Ptr WlrSurface -> IO (Ptr WlrSurface)
 

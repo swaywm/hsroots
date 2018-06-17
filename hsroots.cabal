@@ -61,6 +61,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Backend.Multi
   exposed-modules:     Graphics.Wayland.WlRoots.Backend.Session
   exposed-modules:     Graphics.Wayland.WlRoots.Box
+  exposed-modules:     Graphics.Wayland.WlRoots.Buffer
   exposed-modules:     Graphics.Wayland.WlRoots.Compositor
   exposed-modules:     Graphics.Wayland.WlRoots.Cursor
   exposed-modules:     Graphics.Wayland.WlRoots.DeviceManager
