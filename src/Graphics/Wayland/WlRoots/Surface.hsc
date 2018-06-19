@@ -44,6 +44,7 @@ module Graphics.Wayland.WlRoots.Surface
 
     , surfaceFromResource
     , surfaceHasBuffer
+    , surfaceGetBuffer
     )
 where
 
@@ -67,6 +68,7 @@ import Graphics.Wayland.Resource (WlResource)
 import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
+import Graphics.Wayland.WlRoots.Buffer (WlrBuffer (..))
 
 data WlrSurface
 
@@ -244,3 +246,6 @@ foreign import ccall "wlr_surface_has_buffer" c_has_buffer :: Ptr WlrSurface -> 
 
 surfaceHasBuffer :: Ptr WlrSurface -> IO Bool
 surfaceHasBuffer =  fmap (/= 0) . c_has_buffer
+
+surfaceGetBuffer :: Ptr WlrSurface -> IO (WlrBuffer)
+surfaceGetBuffer = fmap WlrBuffer . #{peek struct wlr_surface, buffer}

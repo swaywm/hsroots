@@ -47,6 +47,7 @@ module Graphics.Wayland.WlRoots.XdgShellv6
     , getPositionerGeometry
     , getPopupAnchor
     , unconstrainPopup
+    , getConfigureSerial
     )
 where
 
@@ -274,15 +275,17 @@ getGeometry :: Ptr WlrXdgSurface -> IO WlrBox
 getGeometry ptr = #{peek struct wlr_xdg_surface_v6, geometry} ptr
 
 
-foreign import ccall "wlr_xdg_toplevel_v6_set_size" c_set_size :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO ()
+foreign import ccall "wlr_xdg_toplevel_v6_set_size" c_set_size :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO Word32
 
-setSize :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO ()
+setSize :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO Word32
 setSize surf width height = do
     role :: CInt <- #{peek struct wlr_xdg_surface_v6, role} surf
-    when
-        (role == #{const WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL})
-        (c_set_size surf width height)
+    case role of
+        #{const WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL} -> c_set_size surf width height
+        _ -> pure 0
 
+getConfigureSerial :: Ptr WlrXdgSurface -> IO Word32
+getConfigureSerial = #{peek struct wlr_xdg_surface_v6, configure_serial}
 
 
 foreign import ccall "wlr_xdg_toplevel_v6_set_activated" c_activate :: Ptr WlrXdgSurface -> Bool -> IO ()
