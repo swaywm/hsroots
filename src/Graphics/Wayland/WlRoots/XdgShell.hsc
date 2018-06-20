@@ -41,6 +41,7 @@ module Graphics.Wayland.WlRoots.XdgShell
     , xdgGetPopupSurfaces
 
     , unconstrainPopup
+    , getConfigureSerial
     )
 where
 
@@ -268,14 +269,14 @@ getGeometry ptr = alloca $ \boxPtr -> do
     c_get_geometry ptr boxPtr
     peek boxPtr
 
-foreign import ccall "wlr_xdg_toplevel_set_size" c_set_size :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO ()
+foreign import ccall "wlr_xdg_toplevel_set_size" c_set_size :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO Word32
 
-setSize :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO ()
+setSize :: Ptr WlrXdgSurface -> Word32 -> Word32 -> IO Word32
 setSize surf width height = do
     role :: CInt <- #{peek struct wlr_xdg_surface, role} surf
-    when
-        (role == #{const WLR_XDG_SURFACE_ROLE_TOPLEVEL})
-        (c_set_size surf width height)
+    case role of
+        #{const WLR_XDG_SURFACE_ROLE_TOPLEVEL} -> c_set_size surf width height
+        _ -> pure 0
 
 
 
@@ -336,3 +337,7 @@ foreign import ccall unsafe "wlr_xdg_popup_unconstrain_from_box" c_popup_unconst
 -- | Box in popups root toplevel coordinates
 unconstrainPopup :: Ptr WlrXdgPopup -> WlrBox -> IO ()
 unconstrainPopup pop box = with box $ c_popup_unconstrain_from_box pop
+
+getConfigureSerial :: Ptr WlrXdgSurface -> IO Word32
+getConfigureSerial = #{peek struct wlr_xdg_surface, configure_serial}
+
