@@ -1,6 +1,7 @@
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NumDecimals #-}
 module Graphics.Wayland.WlRoots.Output
     ( WlrOutput
     , outputEnable
@@ -57,6 +58,7 @@ module Graphics.Wayland.WlRoots.Output
     )
 where
 
+#include <time.h>
 #include <wlr/types/wlr_output.h>
 
 import Control.Monad (filterM)
@@ -64,10 +66,10 @@ import Data.ByteString.Unsafe (unsafePackCString)
 import Data.Int (Int32)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Data.Word (Word32, Word8)
+import Data.Word (Word32, Word8, Word64)
 import Foreign.C.Error (throwErrnoIf_)
-import Foreign.C.Types (CInt(..))
-import Foreign.Marshal.Alloc (alloca)
+import Foreign.C.Types (CInt(..), CLong (..))
+import Foreign.Marshal.Alloc (alloca, allocaBytes)
 import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Foreign.Storable (Storable(..))
 
@@ -128,9 +130,17 @@ makeOutputCurrent out = alloca $ \ptr -> do
 
 
 foreign import ccall unsafe "wlr_output_swap_buffers" c_swap_buffers :: Ptr WlrOutput -> Ptr () -> Ptr PixmanRegion32 -> IO Word8
-swapOutputBuffers :: Ptr WlrOutput -> Maybe (Ptr PixmanRegion32) -> IO Bool
-swapOutputBuffers out damage =
-    (/= 0) <$> c_swap_buffers out nullPtr (fromMaybe nullPtr damage)
+swapOutputBuffers :: Ptr WlrOutput -> Maybe Integer -> Maybe (Ptr PixmanRegion32) -> IO Bool
+swapOutputBuffers out time damage =
+    let withTime = case time of
+            Nothing -> ($ nullPtr)
+            Just t -> \act -> allocaBytes #{size struct timespec} $ \ptr -> do
+                    let secs :: Word64 = fromIntegral (t `div` 1e9)
+                    let nsecs :: CLong = fromIntegral (t `mod` 1e9)
+                    #{poke struct timespec, tv_sec} ptr secs
+                    #{poke struct timespec, tv_nsec} ptr nsecs
+                    act ptr
+     in (/= 0) <$> withTime (\t -> c_swap_buffers out t (fromMaybe nullPtr damage))
 
 
 foreign import ccall unsafe "wlr_output_destroy" c_output_destroy :: Ptr WlrOutput -> IO ()
