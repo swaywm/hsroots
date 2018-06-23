@@ -44,7 +44,6 @@ module Graphics.Wayland.WlRoots.Surface
 
     , surfaceFromResource
     , surfaceHasBuffer
-    , surfaceGetBuffer
     )
 where
 
@@ -63,12 +62,11 @@ import Graphics.Pixman (PixmanRegion32 (..), pixmanRegionNotEmpty)
 import Graphics.Wayland.Signal
 import Graphics.Wayland.Server (Callback(..), OutputTransform (..))
 
-import Graphics.Wayland.List (getListFromHead)
+import Graphics.Wayland.List (getListFromHead, getListElems, WlList)
 import Graphics.Wayland.Resource (WlResource)
 import Graphics.Wayland.WlRoots.Box (WlrBox(..), Point (..))
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
 import Graphics.Wayland.WlRoots.Render (Texture, Renderer)
-import Graphics.Wayland.WlRoots.Buffer (WlrBuffer (..))
 
 data WlrSurface
 
@@ -159,17 +157,19 @@ stateGetSize state = do
 surfaceGetSize :: Ptr WlrSurface -> IO Point
 surfaceGetSize surf = stateGetSize =<< getCurrentState surf
 
-data WlrFrameCallback
+newtype WlrFrameCallback = WlrFrameCallback (Ptr WlList)
+foreign import ccall unsafe "wl_resource_from_link" c_resource_from_link :: Ptr WlList -> IO (Ptr WlResource)
 
-callbackGetResource :: Ptr WlrFrameCallback -> IO (Ptr WlResource)
-callbackGetResource = #{peek struct wlr_frame_callback, resource}
+callbackGetResource :: WlrFrameCallback -> IO (Ptr WlResource)
+callbackGetResource (WlrFrameCallback ptr) =
+    c_resource_from_link ptr
 
-surfaceGetCallbacks :: Ptr WlrSurfaceState -> IO [Ptr WlrFrameCallback]
+surfaceGetCallbacks :: Ptr WlrSurfaceState -> IO [WlrFrameCallback]
 surfaceGetCallbacks ptr =
     let list = #{ptr struct wlr_surface_state, frame_callback_list} ptr
-     in getListFromHead list #{offset struct wlr_frame_callback, link}
+     in fmap WlrFrameCallback <$> getListElems list
 
-callbackGetCallback :: Ptr WlrFrameCallback -> IO Callback
+callbackGetCallback :: WlrFrameCallback -> IO Callback
 callbackGetCallback = fmap (Callback . castPtr) . callbackGetResource
 
 
@@ -246,6 +246,3 @@ foreign import ccall "wlr_surface_has_buffer" c_has_buffer :: Ptr WlrSurface -> 
 
 surfaceHasBuffer :: Ptr WlrSurface -> IO Bool
 surfaceHasBuffer =  fmap (/= 0) . c_has_buffer
-
-surfaceGetBuffer :: Ptr WlrSurface -> IO (WlrBuffer)
-surfaceGetBuffer = fmap WlrBuffer . #{peek struct wlr_surface, buffer}
