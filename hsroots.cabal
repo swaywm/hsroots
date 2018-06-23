@@ -65,6 +65,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Compositor
   exposed-modules:     Graphics.Wayland.WlRoots.Cursor
   exposed-modules:     Graphics.Wayland.WlRoots.DeviceManager
+  exposed-modules:     Graphics.Wayland.WlRoots.ExportDMABuf
   exposed-modules:     Graphics.Wayland.WlRoots.Egl
   exposed-modules:     Graphics.Wayland.WlRoots.GammaControl
   exposed-modules:     Graphics.Wayland.WlRoots.IdleInhibit
@@ -116,7 +117,7 @@ library
   
   -- Base language which the package is written in.
   default-language:    Haskell2010
-  ghc-options:         -Wall -Werror
+  ghc-options:         -Wall -Werror -g
 
   Extra-libraries:     wayland-server
   Extra-libraries:     input
