@@ -29,4 +29,4 @@ screenshooterDestroy :: Ptr WlrScreenshooter -> IO ()
 screenshooterDestroy = c_destroy
 
 getScreenshooterGlobal :: Ptr WlrScreenshooter -> IO (Ptr WlGlobal)
-getScreenshooterGlobal = #{peek struct wlr_screenshooter, wl_global}
+getScreenshooterGlobal = #{peek struct wlr_screenshooter, global}

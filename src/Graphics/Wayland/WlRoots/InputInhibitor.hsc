@@ -54,4 +54,4 @@ getInputInhibitorEvents (WlrInputInhibitor ptr) = WlrInputInhibitEvents
 
 getInputInhibitGlobal :: WlrInputInhibitor -> IO (Ptr WlGlobal)
 getInputInhibitGlobal (WlrInputInhibitor ptr) =
-    #{peek struct wlr_input_inhibit_manager, wl_global} ptr
+    #{peek struct wlr_input_inhibit_manager, global} ptr

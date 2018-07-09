@@ -116,38 +116,23 @@ surfaceGetRoot = c_get_root_surface
 
 data WlrSurfaceState
 
-stateGetSubsurfaceBox :: Ptr WlrSurfaceState -> IO WlrBox
-stateGetSubsurfaceBox state = do
-    x :: Int32 <- #{peek struct wlr_surface_state, subsurface_position.x} state
-    y :: Int32 <- #{peek struct wlr_surface_state, subsurface_position.y} state
-
-    width :: CInt <- #{peek struct wlr_surface_state, width} state
-    height :: CInt <- #{peek struct wlr_surface_state, height} state
-
-    pure WlrBox
-        { boxX = fromIntegral x
-        , boxY = fromIntegral y
-        , boxHeight = fromIntegral height
-        , boxWidth = fromIntegral width
-        }
-
 stateGetTransform :: Ptr WlrSurfaceState -> IO OutputTransform
 stateGetTransform = fmap OutputTransform . #{peek struct wlr_surface_state, transform}
 
 surfaceGetTransform :: Ptr WlrSurface -> IO OutputTransform
-surfaceGetTransform surf = stateGetTransform =<< getCurrentState surf
+surfaceGetTransform = stateGetTransform . getCurrentState
 
 stateGetScale :: Ptr WlrSurfaceState -> IO Word32
 stateGetScale = #{peek struct wlr_surface_state, scale}
 
 surfaceGetScale :: Ptr WlrSurface -> IO Word32
-surfaceGetScale surf = stateGetScale =<< getCurrentState surf
+surfaceGetScale = stateGetScale . getCurrentState
 
 stateGetInputRegion :: Ptr WlrSurfaceState -> Ptr PixmanRegion32
 stateGetInputRegion = #{ptr struct wlr_surface_state, input}
 
-surfaceGetInputRegion :: Ptr WlrSurface -> IO (Ptr PixmanRegion32)
-surfaceGetInputRegion = fmap stateGetInputRegion . getCurrentState
+surfaceGetInputRegion :: Ptr WlrSurface -> Ptr PixmanRegion32
+surfaceGetInputRegion = stateGetInputRegion . getCurrentState
 
 stateGetSize :: Ptr WlrSurfaceState -> IO Point
 stateGetSize state = do
@@ -157,7 +142,7 @@ stateGetSize state = do
     pure $ Point (fromIntegral width) (fromIntegral height)
 
 surfaceGetSize :: Ptr WlrSurface -> IO Point
-surfaceGetSize surf = stateGetSize =<< getCurrentState surf
+surfaceGetSize = stateGetSize . getCurrentState
 
 newtype WlrFrameCallback = WlrFrameCallback (Ptr WlList)
 foreign import ccall unsafe "wl_resource_from_link" c_resource_from_link :: Ptr WlList -> IO (Ptr WlResource)
@@ -178,21 +163,21 @@ callbackGetCallback = fmap (Callback . castPtr) . callbackGetResource
 getPendingState :: Ptr WlrSurface -> IO (Ptr WlrSurfaceState)
 getPendingState = #{peek struct wlr_surface, pending}
 
-getCurrentState :: Ptr WlrSurface -> IO (Ptr WlrSurfaceState)
-getCurrentState = #{peek struct wlr_surface, current}
+getCurrentState :: Ptr WlrSurface -> Ptr WlrSurfaceState
+getCurrentState = #{ptr struct wlr_surface, current}
 
 stateHasDamage :: Ptr WlrSurfaceState -> IO Bool
 stateHasDamage ptr = pixmanRegionNotEmpty . PixmanRegion32 $ #{ptr struct wlr_surface_state, surface_damage} ptr
 
 surfaceHasDamage :: Ptr WlrSurface -> IO Bool
-surfaceHasDamage surf = stateHasDamage =<< getCurrentState surf
+surfaceHasDamage = stateHasDamage . getCurrentState
 
 getStateDamage :: Ptr WlrSurfaceState -> Ptr PixmanRegion32
 getStateDamage = #{ptr struct wlr_surface_state, surface_damage}
 
 getSurfaceDamage :: Ptr WlrSurface -> IO (Maybe PixmanRegion32)
 getSurfaceDamage surf = do
-    state <- getCurrentState surf
+    let state = getCurrentState surf
     hasDamage <- stateHasDamage state
     pure $ if hasDamage
         then Just . PixmanRegion32 $ getStateDamage state
@@ -212,10 +197,13 @@ surfaceGetSubs surf = do
     getListFromHead list #{offset struct wlr_subsurface, parent_link}
 
 subSurfaceGetBox :: Ptr WlrSubSurface -> IO WlrBox
-subSurfaceGetBox surf = stateGetSubsurfaceBox =<< getCurrentState =<< subSurfaceGetSurface surf
+subSurfaceGetBox surf = do
+    Point w h <- surfaceGetSize =<< subSurfaceGetSurface surf
+    let subsurfState = #{ptr struct wlr_subsurface, current} surf
+    x :: Int32 <- #{peek struct wlr_subsurface_state, x} subsurfState
+    y :: Int32 <- #{peek struct wlr_subsurface_state, y} subsurfState
 
---struct wlr_subsurface *wlr_surface_subsurface_at(struct wlr_surface *surface,
---surfacedouble sx, double sy, double *sub_x, double *sub_y);
+    pure $ WlrBox (fromIntegral x) (fromIntegral y) w h
 
 foreign import ccall "wlr_surface_surface_at" c_subsurface_at :: Ptr WlrSurface -> Double -> Double -> Ptr Double -> Ptr Double -> IO (Ptr WlrSurface)
 

@@ -27,4 +27,4 @@ destroyGammaManager :: Ptr WlrGammaManager -> IO ()
 destroyGammaManager = c_destroy
 
 getGammaGlobal :: Ptr WlrGammaManager -> IO (Ptr WlGlobal)
-getGammaGlobal = #{peek struct wlr_gamma_control_manager, wl_global}
+getGammaGlobal = #{peek struct wlr_gamma_control_manager, global}

@@ -316,7 +316,7 @@ outputFromResource = c_from_resource
 
 outputResourceForClient :: Client -> Ptr WlrOutput -> IO (Ptr WlResource)
 outputResourceForClient target output = do
-    elems <- getListElems $ #{ptr struct wlr_output, wl_resources} output
+    elems <- getListElems $ #{ptr struct wlr_output, resources} output
     ret <- flip filterM elems $ \link -> do
         client <- resourceGetClient $ resourceFromLink link
         pure (client == target)
