@@ -47,17 +47,17 @@ data ToolEvents = ToolEvents
 
 getToolEvents :: Ptr WlrTabletTool -> ToolEvents
 getToolEvents ptr = ToolEvents
-    { toolEventAxis = #{ptr struct wlr_tablet_tool, events.axis} ptr
-    , toolEventProximity = #{ptr struct wlr_tablet_tool, events.proximity} ptr
-    , toolEventTip = #{ptr struct wlr_tablet_tool, events.tip} ptr
-    , toolEventButton = #{ptr struct wlr_tablet_tool, events.button} ptr
+    { toolEventAxis = #{ptr struct wlr_tablet, events.axis} ptr
+    , toolEventProximity = #{ptr struct wlr_tablet, events.proximity} ptr
+    , toolEventTip = #{ptr struct wlr_tablet, events.tip} ptr
+    , toolEventButton = #{ptr struct wlr_tablet, events.button} ptr
     }
 
 peekToolData :: Ptr WlrTabletTool -> IO (Ptr a)
-peekToolData = #{peek struct wlr_tablet_tool, data}
+peekToolData = #{peek struct wlr_tablet, data}
 
 pokeToolData :: Ptr WlrTabletTool -> Ptr a -> IO ()
-pokeToolData = #{poke struct wlr_tablet_tool, data}
+pokeToolData = #{poke struct wlr_tablet, data}
 
 
 data ToolAxis
