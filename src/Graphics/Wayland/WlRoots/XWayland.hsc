@@ -33,7 +33,6 @@ module Graphics.Wayland.WlRoots.XWayland
     , setXWaylandSeat
     , isX11Mapped
     , getX11Pid
-    , isSurfaceUnamanged
     )
 where
 
@@ -253,8 +252,3 @@ isX11Mapped ptr = do
 
 getX11Pid :: Ptr X11Surface -> IO ProcessID
 getX11Pid = #{peek struct wlr_xwayland_surface, pid}
-
-foreign import ccall unsafe "wlr_xwayland_surface_is_unmanaged" c_is_unmanaged :: Ptr X11Surface -> IO Word8
-
-isSurfaceUnamanged :: Ptr X11Surface -> IO Bool
-isSurfaceUnamanged = fmap (/= 0) . c_is_unmanaged

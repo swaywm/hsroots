@@ -17,10 +17,10 @@ data LogPriority
     deriving (Show, Eq)
 
 logPrioToInt :: Num a => LogPriority -> a
-logPrioToInt Silent = #{const L_SILENT}
-logPrioToInt Error  = #{const L_ERROR}
-logPrioToInt Info   = #{const L_INFO}
-logPrioToInt Debug  = #{const L_DEBUG}
+logPrioToInt Silent = #{const WLR_SILENT}
+logPrioToInt Error  = #{const WLR_ERROR}
+logPrioToInt Info   = #{const WLR_INFO}
+logPrioToInt Debug  = #{const WLR_DEBUG}
 
 foreign import ccall unsafe "wlr_log_init" c_log_init :: CInt -> Ptr a -> IO ()
 
