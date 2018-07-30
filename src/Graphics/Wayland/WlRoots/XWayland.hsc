@@ -33,6 +33,8 @@ module Graphics.Wayland.WlRoots.XWayland
     , setXWaylandSeat
     , isX11Mapped
     , getX11Pid
+
+    , x11ORWantsFocus
     )
 where
 
@@ -252,3 +254,8 @@ isX11Mapped ptr = do
 
 getX11Pid :: Ptr X11Surface -> IO ProcessID
 getX11Pid = #{peek struct wlr_xwayland_surface, pid}
+
+foreign import ccall "wlr_xwayland_or_surface_wants_focus" c_wants_focus :: Ptr X11Surface -> IO Word8
+
+x11ORWantsFocus :: Ptr X11Surface -> IO Bool
+x11ORWantsFocus = fmap (/= 0) . c_wants_focus
