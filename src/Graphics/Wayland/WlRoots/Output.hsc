@@ -58,6 +58,7 @@ module Graphics.Wayland.WlRoots.Output
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <time.h>
 #include <wlr/types/wlr_output.h>
 

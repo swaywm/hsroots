@@ -16,6 +16,7 @@ module Graphics.Wayland.WlRoots.Input.Pointer
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_pointer.h>
 
 import Data.Int (Int32)

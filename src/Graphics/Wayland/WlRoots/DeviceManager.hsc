@@ -10,6 +10,7 @@ module Graphics.Wayland.WlRoots.DeviceManager
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_data_device.h>
 
 import Data.ByteString (useAsCString)

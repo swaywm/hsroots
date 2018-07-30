@@ -7,6 +7,7 @@ module Graphics.Wayland.WlRoots.XCursorManager
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_xcursor_manager.h>
 
 import Data.Word (Word32)

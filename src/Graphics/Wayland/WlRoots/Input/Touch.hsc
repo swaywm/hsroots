@@ -10,6 +10,7 @@ module Graphics.Wayland.WlRoots.Input.Touch
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_touch.h>
 
 import Data.Int (Int32)

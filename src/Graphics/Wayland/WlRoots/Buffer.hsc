@@ -7,6 +7,7 @@ module Graphics.Wayland.WlRoots.Buffer
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_buffer.h>
 
 import Foreign.Storable

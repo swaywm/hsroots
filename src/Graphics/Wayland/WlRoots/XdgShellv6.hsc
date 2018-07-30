@@ -51,6 +51,7 @@ module Graphics.Wayland.WlRoots.XdgShellv6
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_xdg_shell_v6.h>
 
 import Data.Text (Text)

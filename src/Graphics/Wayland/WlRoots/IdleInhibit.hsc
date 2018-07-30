@@ -12,6 +12,9 @@ module Graphics.Wayland.WlRoots.IdleInhibit
     )
 where
 
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_idle_inhibit_v1.h>
+
 import Foreign.Ptr (Ptr, plusPtr)
 import Foreign.Storable (Storable (..))
 import Foreign.C.Error (throwErrnoIfNull)
@@ -20,8 +23,6 @@ import Graphics.Wayland.Server (DisplayServer(..))
 import Graphics.Wayland.Signal (WlSignal)
 import Graphics.Wayland.Global (WlGlobal)
 import Graphics.Wayland.WlRoots.Surface (WlrSurface)
-
-#include <wlr/types/wlr_idle_inhibit_v1.h>
 
 newtype IdleInhibitManager = IdleInhibitManager { unIIM :: Ptr IdleInhibitManager}
 

@@ -26,6 +26,7 @@ module Graphics.Wayland.WlRoots.OutputLayout
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 
 import Foreign.Ptr (Ptr, nullPtr, plusPtr)

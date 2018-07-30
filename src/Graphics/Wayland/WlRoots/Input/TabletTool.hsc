@@ -21,6 +21,7 @@ module Graphics.Wayland.WlRoots.Input.TabletTool
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_tablet_tool.h>
 
 import Data.Word (Word32)

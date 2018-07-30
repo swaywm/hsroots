@@ -10,6 +10,7 @@ module Graphics.Wayland.WlRoots.InputInhibitor
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_input_inhibitor.h>
 
 import Foreign.C.Error (throwErrnoIfNull)

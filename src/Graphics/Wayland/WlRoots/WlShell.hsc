@@ -26,6 +26,7 @@ module Graphics.Wayland.WlRoots.WlShell
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_wl_shell.h>
 
 import Data.Composition ((.:))

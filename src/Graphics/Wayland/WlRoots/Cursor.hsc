@@ -28,6 +28,7 @@ module Graphics.Wayland.WlRoots.Cursor
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 
 import Data.Word (Word32, Word8)

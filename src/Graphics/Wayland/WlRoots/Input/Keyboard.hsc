@@ -34,6 +34,7 @@ module Graphics.Wayland.WlRoots.Input.Keyboard
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
 
 import Data.Bits ((.&.), (.|.), Bits)

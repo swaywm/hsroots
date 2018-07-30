@@ -48,6 +48,7 @@ module Graphics.Wayland.WlRoots.Surface
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_surface.h>
 
 import Data.Composition ((.:))

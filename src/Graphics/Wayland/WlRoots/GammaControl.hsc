@@ -6,6 +6,7 @@ module Graphics.Wayland.WlRoots.GammaControl
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_gamma_control.h>
 
 import Foreign.Ptr (Ptr)

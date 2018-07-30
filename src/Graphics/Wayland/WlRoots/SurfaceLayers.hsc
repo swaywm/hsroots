@@ -32,6 +32,7 @@ module Graphics.Wayland.WlRoots.SurfaceLayers
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_xdg_shell.h>
 

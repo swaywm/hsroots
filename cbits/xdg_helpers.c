@@ -1,3 +1,4 @@
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/types/wlr_xdg_shell.h>

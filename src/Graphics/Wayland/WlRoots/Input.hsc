@@ -17,6 +17,7 @@ module Graphics.Wayland.WlRoots.Input
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_input_device.h>
 
 import Data.ByteString.Unsafe (unsafePackCString)

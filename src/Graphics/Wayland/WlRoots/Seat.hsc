@@ -50,6 +50,7 @@ module Graphics.Wayland.WlRoots.Seat
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_seat.h>
 
 import Data.Bits ((.|.))

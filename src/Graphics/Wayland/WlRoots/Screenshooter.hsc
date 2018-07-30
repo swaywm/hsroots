@@ -6,6 +6,7 @@ module Graphics.Wayland.WlRoots.Screenshooter
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_screenshooter.h>
 
 import Foreign.Ptr (Ptr)

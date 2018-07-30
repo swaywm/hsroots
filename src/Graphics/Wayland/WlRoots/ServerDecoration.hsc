@@ -15,6 +15,7 @@ module Graphics.Wayland.WlRoots.ServerDecoration
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_server_decoration.h>
 
 import Data.Word (Word32)

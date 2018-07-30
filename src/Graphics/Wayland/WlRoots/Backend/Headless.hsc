@@ -6,6 +6,7 @@ module Graphics.Wayland.WlRoots.Backend.Headless
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/backend/headless.h>
 
 import Foreign.C.Error (throwErrnoIfNull)

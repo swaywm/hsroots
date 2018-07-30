@@ -6,11 +6,12 @@ module Graphics.Wayland.WlRoots.Input.Buttons
     )
 where
 
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_input_device.h>
+
 import Foreign.C.Types (CInt)
 import Foreign.Ptr (castPtr)
 import Foreign.Storable (Storable(..))
-
-#include <wlr/types/wlr_input_device.h>
 
 data ButtonState
     = ButtonReleased

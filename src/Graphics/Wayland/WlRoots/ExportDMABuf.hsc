@@ -6,6 +6,7 @@ module Graphics.Wayland.WlRoots.ExportDMABuf
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 
 import Foreign.Ptr (Ptr)

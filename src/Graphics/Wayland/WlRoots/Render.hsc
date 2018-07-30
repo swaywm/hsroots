@@ -23,6 +23,7 @@ module Graphics.Wayland.WlRoots.Render
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/render/wlr_renderer.h>
 
 import Control.Exception (bracket_)

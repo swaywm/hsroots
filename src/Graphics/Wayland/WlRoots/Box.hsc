@@ -13,6 +13,7 @@ module Graphics.Wayland.WlRoots.Box
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_box.h>
 
 import System.IO.Unsafe (unsafePerformIO)

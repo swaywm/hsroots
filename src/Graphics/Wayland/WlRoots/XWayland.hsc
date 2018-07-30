@@ -38,6 +38,7 @@ module Graphics.Wayland.WlRoots.XWayland
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/xwayland.h>
 
 

@@ -11,6 +11,7 @@ module Graphics.Wayland.WlRoots.Backend
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
 
 import Foreign.Ptr (Ptr, plusPtr, nullPtr)

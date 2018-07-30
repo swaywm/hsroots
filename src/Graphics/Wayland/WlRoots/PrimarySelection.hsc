@@ -6,6 +6,7 @@ module Graphics.Wayland.WlRoots.PrimarySelection
     )
 where
 
+#define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_primary_selection.h>
 
 import Foreign.C.Error (throwErrnoIfNull)
