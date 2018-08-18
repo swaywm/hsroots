@@ -73,6 +73,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Buttons
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Keyboard
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Pointer
+  exposed-modules:     Graphics.Wayland.WlRoots.Input.Tablet
   exposed-modules:     Graphics.Wayland.WlRoots.Input.TabletPad
   exposed-modules:     Graphics.Wayland.WlRoots.Input.TabletTool
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Touch

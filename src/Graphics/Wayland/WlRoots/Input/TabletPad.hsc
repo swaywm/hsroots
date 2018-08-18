@@ -1,5 +1,5 @@
 module Graphics.Wayland.WlRoots.Input.TabletPad
-    ( WlrTabletPad
+    ( WlrTabletPad (..)
     , PadEvents (..)
     , getPadEvents
     , peekPadData
@@ -27,33 +27,38 @@ import Graphics.Wayland.Signal (WlSignal)
 
 -- import {-# SOURCE #-} Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Buttons
+import Graphics.Wayland.WlRoots.Input.Tablet (WlrTablet)
 
-data WlrTabletPad
+newtype WlrTabletPad = WlrTabletPad (Ptr WlrTabletPad) deriving (Eq, Show)
 
 data PadEvents = PadEvents
     { padEventButton :: Ptr (WlSignal PadButtonEvent)
     , padEventRing   :: Ptr (WlSignal PadRingEvent)
     , padEventStrip  :: Ptr (WlSignal PadStripEvent)
+    , padEventAttach :: Ptr (WlSignal WlrTablet)
     }
 
 
-getPadEvents :: Ptr WlrTabletPad -> PadEvents
-getPadEvents ptr = PadEvents
+getPadEvents :: WlrTabletPad -> PadEvents
+getPadEvents (WlrTabletPad ptr) = PadEvents
     { padEventButton = #{ptr struct wlr_tablet_pad, events.button} ptr
     , padEventRing  = #{ptr struct wlr_tablet_pad, events.ring} ptr
     , padEventStrip = #{ptr struct wlr_tablet_pad, events.strip} ptr
+    , padEventAttach = #{ptr struct wlr_tablet_pad, events.attach_tablet} ptr
     }
 
-peekPadData :: Ptr WlrTabletPad -> IO (Ptr a)
-peekPadData = #{peek struct wlr_tablet_pad, data}
+peekPadData :: WlrTabletPad -> IO (Ptr a)
+peekPadData (WlrTabletPad ptr) = #{peek struct wlr_tablet_pad, data} ptr
 
-pokePadData :: Ptr WlrTabletPad -> Ptr a -> IO ()
-pokePadData = #{poke struct wlr_tablet_pad, data}
+pokePadData :: WlrTabletPad -> Ptr a -> IO ()
+pokePadData (WlrTabletPad ptr) = #{poke struct wlr_tablet_pad, data} ptr
 
 data PadButtonEvent = PadButtonEvent
     { padButtonEvtTime   :: Word32
     , padButtonEvtButton :: Word32
     , padButtonEvtState  :: ButtonState
+    , padButtonEvtMode   :: CInt
+    , padButtonEvtGroup  :: CInt
     } deriving (Show)
 
 instance Storable PadButtonEvent where
@@ -63,10 +68,14 @@ instance Storable PadButtonEvent where
         <$> #{peek struct wlr_event_tablet_pad_button, time_msec} ptr
         <*> #{peek struct wlr_event_tablet_pad_button, button} ptr
         <*> #{peek struct wlr_event_tablet_pad_button, state} ptr
+        <*> #{peek struct wlr_event_tablet_pad_button, mode} ptr
+        <*> #{peek struct wlr_event_tablet_pad_button, group} ptr
     poke ptr evt = do
         #{poke struct wlr_event_tablet_pad_button, time_msec} ptr $ padButtonEvtTime evt
         #{poke struct wlr_event_tablet_pad_button, button} ptr $ padButtonEvtButton evt
         #{poke struct wlr_event_tablet_pad_button, state} ptr $ padButtonEvtState evt
+        #{poke struct wlr_event_tablet_pad_button, mode} ptr $ padButtonEvtMode evt
+        #{poke struct wlr_event_tablet_pad_button, group} ptr $ padButtonEvtGroup evt
 
 data PadRingSource
     = RingSourceUnknown
@@ -93,6 +102,7 @@ data PadRingEvent = PadRingEvent
     , padRingEvtSource   :: PadRingSource
     , padRingEvtRing     :: Word32
     , padRingEvtPosition :: Double
+    , padRingEvtMode     :: CInt
     } deriving (Show)
 
 instance Storable PadRingEvent where
@@ -103,11 +113,13 @@ instance Storable PadRingEvent where
         <*> #{peek struct wlr_event_tablet_pad_ring, source} ptr
         <*> #{peek struct wlr_event_tablet_pad_ring, ring} ptr
         <*> #{peek struct wlr_event_tablet_pad_ring, position} ptr
+        <*> #{peek struct wlr_event_tablet_pad_ring, mode} ptr
     poke ptr evt = do
         #{poke struct wlr_event_tablet_pad_ring, time_msec} ptr $ padRingEvtTime evt
         #{poke struct wlr_event_tablet_pad_ring, source} ptr $ padRingEvtSource evt
         #{poke struct wlr_event_tablet_pad_ring, ring} ptr $ padRingEvtRing evt
         #{poke struct wlr_event_tablet_pad_ring, position} ptr $ padRingEvtPosition evt
+        #{poke struct wlr_event_tablet_pad_ring, mode} ptr $ padRingEvtMode evt
 
 data PadStripSource
     = StripSourceUnknown
@@ -134,6 +146,7 @@ data PadStripEvent = PadStripEvent
     , padStripEvtSource   :: PadStripSource
     , padStripEvtStrip    :: Word32
     , padStripEvtPosition :: Double
+    , padStripEvtMode     :: CInt
     } deriving (Show)
 
 instance Storable PadStripEvent where
@@ -144,8 +157,10 @@ instance Storable PadStripEvent where
         <*> #{peek struct wlr_event_tablet_pad_strip, source} ptr
         <*> #{peek struct wlr_event_tablet_pad_strip, strip} ptr
         <*> #{peek struct wlr_event_tablet_pad_strip, position} ptr
+        <*> #{peek struct wlr_event_tablet_pad_strip, mode} ptr
     poke ptr evt = do
         #{poke struct wlr_event_tablet_pad_strip, time_msec} ptr $ padStripEvtTime evt
         #{poke struct wlr_event_tablet_pad_strip, source} ptr $ padStripEvtSource evt
         #{poke struct wlr_event_tablet_pad_strip, strip} ptr $ padStripEvtStrip evt
         #{poke struct wlr_event_tablet_pad_strip, position} ptr $ padStripEvtPosition evt
+        #{poke struct wlr_event_tablet_pad_strip, mode} ptr $ padStripEvtMode evt

@@ -29,8 +29,8 @@ import Graphics.Wayland.Signal (WlSignal)
 
 import Graphics.Wayland.WlRoots.Input.Keyboard (WlrKeyboard)
 import Graphics.Wayland.WlRoots.Input.Pointer (WlrPointer)
-import Graphics.Wayland.WlRoots.Input.TabletPad (WlrTabletPad)
-import Graphics.Wayland.WlRoots.Input.TabletTool (WlrTabletTool)
+import Graphics.Wayland.WlRoots.Input.TabletPad (WlrTabletPad (..))
+import Graphics.Wayland.WlRoots.Input.Tablet (WlrTablet (..))
 import Graphics.Wayland.WlRoots.Input.Touch (WlrTouch)
 import Graphics.Wayland.WlRoots.Input.Buttons
 
@@ -41,23 +41,23 @@ data DeviceType
     = DeviceKeyboard   !(Ptr WlrKeyboard)
     | DevicePointer    !(Ptr WlrPointer)
     | DeviceTouch      !(Ptr WlrTouch)
-    | DeviceTabletTool !(Ptr WlrTabletTool)
-    | DeviceTabletPad  !(Ptr WlrTabletPad)
+    | DeviceTablet     !WlrTablet
+    | DeviceTabletPad  !WlrTabletPad
     deriving (Eq, Show)
 
 deviceTypeToInt :: Num a => DeviceType -> a
 deviceTypeToInt (DeviceKeyboard   _) = #{const WLR_INPUT_DEVICE_KEYBOARD}
 deviceTypeToInt (DevicePointer    _) = #{const WLR_INPUT_DEVICE_POINTER}
 deviceTypeToInt (DeviceTouch      _) = #{const WLR_INPUT_DEVICE_TOUCH}
-deviceTypeToInt (DeviceTabletTool _) = #{const WLR_INPUT_DEVICE_TABLET_TOOL}
+deviceTypeToInt (DeviceTablet     _) = #{const WLR_INPUT_DEVICE_TABLET_TOOL}
 deviceTypeToInt (DeviceTabletPad  _) = #{const WLR_INPUT_DEVICE_TABLET_PAD}
 
 intToDeviceType :: (Eq a, Num a, Show a) => a -> Ptr b -> DeviceType
 intToDeviceType #{const WLR_INPUT_DEVICE_KEYBOARD}    = DeviceKeyboard . castPtr
 intToDeviceType #{const WLR_INPUT_DEVICE_POINTER}     = DevicePointer . castPtr
 intToDeviceType #{const WLR_INPUT_DEVICE_TOUCH}       = DeviceTouch . castPtr
-intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_TOOL} = DeviceTabletTool . castPtr
-intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_PAD}  = DeviceTabletPad . castPtr
+intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_TOOL} = DeviceTablet . WlrTablet . castPtr
+intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_PAD}  = DeviceTabletPad . WlrTabletPad . castPtr
 intToDeviceType x = error $ "Got an unknown DeviceType: " ++ show x
 
 data InputDevice

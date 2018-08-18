@@ -43,7 +43,7 @@ import Graphics.Wayland.WlRoots.Box (WlrBox)
 import Graphics.Wayland.WlRoots.Input (InputDevice)
 import Graphics.Wayland.WlRoots.Input.Pointer
     (WlrEventPointerButton, WlrEventPointerMotion, WlrEventPointerAbsMotion, WlrEventPointerAxis)
-import Graphics.Wayland.WlRoots.Input.TabletTool
+import Graphics.Wayland.WlRoots.Input.Tablet
     (ToolAxisEvent, ToolProximityEvent, ToolTipEvent, ToolButtonEvent)
 import Graphics.Wayland.WlRoots.Input.Touch
 import Graphics.Wayland.WlRoots.Output (WlrOutput)
