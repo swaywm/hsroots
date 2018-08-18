@@ -25,10 +25,10 @@ import Foreign.Marshal.Utils (with)
 
 import Graphics.Wayland.Server (OutputTransform(..))
 
-data WlrBox = WlrBox 
-    { boxX :: Int
-    , boxY :: Int
-    , boxWidth :: Int
+data WlrBox = WlrBox
+    { boxX      :: Int
+    , boxY      :: Int
+    , boxWidth  :: Int
     , boxHeight :: Int
     } deriving (Eq, Show)
 

@@ -14,7 +14,7 @@ data Color = Color
     , colorG :: Float
     , colorB :: Float
     , colorA :: Float
-    }
+    } deriving (Show)
 
 darkenBy :: Float -> Color -> Color
 darkenBy d (Color r g b a) =
