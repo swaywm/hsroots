@@ -68,6 +68,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.ExportDMABuf
   exposed-modules:     Graphics.Wayland.WlRoots.Egl
   exposed-modules:     Graphics.Wayland.WlRoots.GammaControl
+  exposed-modules:     Graphics.Wayland.WlRoots.Global
   exposed-modules:     Graphics.Wayland.WlRoots.IdleInhibit
   exposed-modules:     Graphics.Wayland.WlRoots.Input
   exposed-modules:     Graphics.Wayland.WlRoots.Input.Buttons
@@ -91,6 +92,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.ServerDecoration
   exposed-modules:     Graphics.Wayland.WlRoots.Surface
   exposed-modules:     Graphics.Wayland.WlRoots.SurfaceLayers
+  exposed-modules:     Graphics.Wayland.WlRoots.Tabletv2
   exposed-modules:     Graphics.Wayland.WlRoots.Util
   exposed-modules:     Graphics.Wayland.WlRoots.Util.Region
   exposed-modules:     Graphics.Wayland.WlRoots.WlShell
