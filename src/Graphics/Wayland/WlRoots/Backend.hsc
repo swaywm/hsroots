@@ -4,6 +4,7 @@ module Graphics.Wayland.WlRoots.Backend
     , backendAutocreate
     , backendStart
     , backendDestroy
+    , getSession
 
     , BackendSignals (..)
     , backendGetSignals
@@ -17,10 +18,11 @@ where
 import Foreign.Ptr (Ptr, plusPtr, nullPtr)
 import Graphics.Wayland.Server (DisplayServer(..))
 import Foreign.C.Error (throwErrnoIfNull, throwErrnoIf_)
-import Graphics.Wayland.WlRoots.Output (WlrOutput)
-import Graphics.Wayland.WlRoots.Input (InputDevice)
-import Graphics.Wayland.WlRoots.Render (Renderer)
 import Graphics.Wayland.Signal (WlSignal)
+import Graphics.Wayland.WlRoots.Backend.Session (WlrSession)
+import Graphics.Wayland.WlRoots.Input (InputDevice)
+import Graphics.Wayland.WlRoots.Output (WlrOutput)
+import Graphics.Wayland.WlRoots.Render (Renderer)
 
 data Backend
 
@@ -62,3 +64,12 @@ foreign import ccall "wlr_backend_get_renderer" c_get_renderer :: Ptr Backend ->
 
 backendGetRenderer :: Ptr Backend -> IO (Ptr Renderer)
 backendGetRenderer = c_get_renderer
+
+foreign import ccall unsafe "wlr_backend_get_session" c_get_session :: Ptr Backend -> IO (Ptr WlrSession)
+
+getSession :: Ptr Backend -> IO (Maybe (Ptr WlrSession))
+getSession b = do
+    s <- c_get_session b
+    pure $ if s == nullPtr
+        then Nothing
+        else Just s

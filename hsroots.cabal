@@ -82,7 +82,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.LinuxDMABuf
   exposed-modules:     Graphics.Wayland.WlRoots.Output
   exposed-modules:     Graphics.Wayland.WlRoots.OutputLayout
-  exposed-modules:     Graphics.Wayland.WlRoots.PrimarySelection
+  --exposed-modules:     Graphics.Wayland.WlRoots.PrimarySelection
   exposed-modules:     Graphics.Wayland.WlRoots.Render
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Color
   exposed-modules:     Graphics.Wayland.WlRoots.Render.Gles2

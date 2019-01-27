@@ -65,7 +65,7 @@ where
 import Control.Monad (filterM)
 import Data.ByteString.Unsafe (unsafePackCString)
 import Data.Int (Int32)
-import Data.Maybe (fromMaybe)
+--import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Word (Word32, Word8, Word64)
 import Foreign.C.Error (throwErrnoIf_)
@@ -132,7 +132,7 @@ makeOutputCurrent out = alloca $ \ptr -> do
 
 foreign import ccall unsafe "wlr_output_swap_buffers" c_swap_buffers :: Ptr WlrOutput -> Ptr () -> Ptr PixmanRegion32 -> IO Word8
 swapOutputBuffers :: Ptr WlrOutput -> Maybe Integer -> Maybe (Ptr PixmanRegion32) -> IO Bool
-swapOutputBuffers out time damage =
+swapOutputBuffers out time _ {-damage-} =
     let withTime = case time of
             Nothing -> ($ nullPtr)
             Just t -> \act -> allocaBytes #{size struct timespec} $ \ptr -> do
@@ -141,7 +141,7 @@ swapOutputBuffers out time damage =
                     #{poke struct timespec, tv_sec} ptr secs
                     #{poke struct timespec, tv_nsec} ptr nsecs
                     act ptr
-     in (/= 0) <$> withTime (\t -> c_swap_buffers out t (fromMaybe nullPtr damage))
+     in (/= 0) <$> withTime (\t -> c_swap_buffers out t {-(fromMaybe nullPtr damage)-} nullPtr)
 
 
 foreign import ccall unsafe "wlr_output_destroy" c_output_destroy :: Ptr WlrOutput -> IO ()

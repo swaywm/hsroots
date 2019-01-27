@@ -22,3 +22,5 @@ setGlobalFilter (DisplayServer ptr) Nothing = c_set_filter ptr (castPtrToFunPtr 
 setGlobalFilter (DisplayServer ptr) (Just fun) = do
     cb <- mkCbFun $ \c g _ -> fun c g
     c_set_filter ptr cb nullPtr
+
+
