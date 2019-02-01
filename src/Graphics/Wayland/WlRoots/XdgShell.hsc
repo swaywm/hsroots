@@ -254,10 +254,14 @@ xdgSurfaceAt surf x y = alloca $ \xptr -> alloca $ \yptr -> do
             pure $ Just (popup, newx, newy)
 
 
-foreign import ccall "wlr_xdg_toplevel_send_close" c_close :: Ptr WlrXdgToplevel -> IO ()
+foreign import ccall "wlr_xdg_toplevel_send_close" c_close :: Ptr WlrXdgSurface -> IO ()
 
-sendClose :: Ptr WlrXdgToplevel -> IO ()
-sendClose = c_close
+sendClose :: Ptr WlrXdgSurface -> IO ()
+sendClose surf = do
+    role :: CInt <- #{peek struct wlr_xdg_surface, role} surf
+    case role of
+        #{const WLR_XDG_SURFACE_ROLE_TOPLEVEL} -> c_close surf
+        _ -> pure ()
 
 foreign import ccall "wlr_xdg_surface_get_geometry" c_get_geometry :: Ptr WlrXdgSurface -> Ptr WlrBox -> IO ()
 
