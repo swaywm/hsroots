@@ -37,12 +37,15 @@ import Graphics.Wayland.WlRoots.Input.Buttons
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 
+newtype WlrSwitch = WlrSwitch (Ptr WlrSwitch) deriving (Eq, Show)
+
 data DeviceType
     = DeviceKeyboard   !(Ptr WlrKeyboard)
     | DevicePointer    !(Ptr WlrPointer)
     | DeviceTouch      !(Ptr WlrTouch)
     | DeviceTablet     !WlrTablet
     | DeviceTabletPad  !WlrTabletPad
+    | DeviceSwitch  !WlrSwitch
     deriving (Eq, Show)
 
 deviceTypeToInt :: Num a => DeviceType -> a
@@ -51,6 +54,7 @@ deviceTypeToInt (DevicePointer    _) = #{const WLR_INPUT_DEVICE_POINTER}
 deviceTypeToInt (DeviceTouch      _) = #{const WLR_INPUT_DEVICE_TOUCH}
 deviceTypeToInt (DeviceTablet     _) = #{const WLR_INPUT_DEVICE_TABLET_TOOL}
 deviceTypeToInt (DeviceTabletPad  _) = #{const WLR_INPUT_DEVICE_TABLET_PAD}
+deviceTypeToInt (DeviceSwitch  _) = #{const WLR_INPUT_DEVICE_SWITCH}
 
 intToDeviceType :: (Eq a, Num a, Show a) => a -> Ptr b -> DeviceType
 intToDeviceType #{const WLR_INPUT_DEVICE_KEYBOARD}    = DeviceKeyboard . castPtr
@@ -58,6 +62,7 @@ intToDeviceType #{const WLR_INPUT_DEVICE_POINTER}     = DevicePointer . castPtr
 intToDeviceType #{const WLR_INPUT_DEVICE_TOUCH}       = DeviceTouch . castPtr
 intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_TOOL} = DeviceTablet . WlrTablet . castPtr
 intToDeviceType #{const WLR_INPUT_DEVICE_TABLET_PAD}  = DeviceTabletPad . WlrTabletPad . castPtr
+intToDeviceType #{const WLR_INPUT_DEVICE_SWITCH}  = DeviceSwitch . WlrSwitch . castPtr
 intToDeviceType x = error $ "Got an unknown DeviceType: " ++ show x
 
 data InputDevice
