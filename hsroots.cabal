@@ -64,6 +64,7 @@ library
   exposed-modules:     Graphics.Wayland.WlRoots.Buffer
   exposed-modules:     Graphics.Wayland.WlRoots.Compositor
   exposed-modules:     Graphics.Wayland.WlRoots.Cursor
+  exposed-modules:     Graphics.Wayland.WlRoots.DataControl
   exposed-modules:     Graphics.Wayland.WlRoots.DeviceManager
   exposed-modules:     Graphics.Wayland.WlRoots.ExportDMABuf
   exposed-modules:     Graphics.Wayland.WlRoots.Egl

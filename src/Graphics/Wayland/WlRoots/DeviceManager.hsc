@@ -36,7 +36,7 @@ managerCreate (DisplayServer ptr) =
     throwErrnoIfNull "managerCreate" $ c_manager_create ptr
 
 
-newtype WlrDataSource = WlrDataSource { unDS :: Ptr WlrDataSource }
+newtype WlrDataSource = WlrDataSource { unDS :: Ptr WlrDataSource } deriving (Show, Eq)
 
 foreign import ccall "dynamic"
     mkSendFun :: FunPtr (Ptr WlrDataSource -> Ptr CChar -> Fd -> IO ())

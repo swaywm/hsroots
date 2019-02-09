@@ -22,7 +22,10 @@ module Graphics.Wayland.WlRoots.Seat
     , keyboardClearFocus
 
     , SetCursorEvent (..)
+    , SeatRequestSetSelectionEvent(..)
     , SeatSignals (..)
+
+    , setSelection
 
     , WlrSeatClient (..)
     , seatGetSignals
@@ -204,14 +207,37 @@ instance Storable SetCursorEvent where
         #{poke struct wlr_seat_pointer_request_set_cursor_event, hotspot_x} ptr $ seatCursorSurfaceHotspotX evt
         #{poke struct wlr_seat_pointer_request_set_cursor_event, hotspot_y} ptr $ seatCursorSurfaceHotspotY evt
 
+data SeatRequestSetSelectionEvent = SeatRequestSetSelectionEvent
+    { seatRequestSetSelectionEventSource :: WlrDataSource
+    , seatRequestSetSelectionEventSerial :: Word32
+    } deriving (Show, Eq)
+
+instance Storable SeatRequestSetSelectionEvent where
+    sizeOf _ = #{size struct wlr_seat_request_set_selection_event}
+    alignment _ = #{alignment struct wlr_seat_request_set_selection_event}
+    peek ptr = SeatRequestSetSelectionEvent . WlrDataSource
+        <$> #{peek struct wlr_seat_request_set_selection_event, source} ptr
+        <*> #{peek struct wlr_seat_request_set_selection_event, serial} ptr
+    poke ptr evt = do
+        #{poke struct wlr_seat_request_set_selection_event, source} ptr . unDS $ seatRequestSetSelectionEventSource evt
+        #{poke struct wlr_seat_request_set_selection_event, serial} ptr $ seatRequestSetSelectionEventSerial evt
+
 data SeatSignals = SeatSignals
-    { seatSignalSetCursor :: Ptr (WlSignal (SetCursorEvent))
+    { seatSignalSetCursor :: Ptr (WlSignal SetCursorEvent)
+    , seatSignalRequestSetSelection :: Ptr (WlSignal SeatRequestSetSelectionEvent)
+    , seatSignalSetSelection :: Ptr (WlSignal SeatRequestSetSelectionEvent)
     }
 
 seatGetSignals :: Ptr WlrSeat -> SeatSignals
 seatGetSignals ptr = SeatSignals
     { seatSignalSetCursor = #{ptr struct wlr_seat, events.request_set_cursor} ptr
+    , seatSignalRequestSetSelection = #{ptr struct wlr_seat, events.request_set_selection} ptr
+    , seatSignalSetSelection = #{ptr struct wlr_seat, events.set_selection} ptr
     }
+
+foreign import ccall safe "wlr_seat_set_selection" c_set_selection :: Ptr WlrSeat -> Ptr WlrDataSource -> Word32 -> IO ()
+setSelection :: Ptr WlrSeat -> WlrDataSource -> Word32 -> IO ()
+setSelection seat (WlrDataSource dev) serial = c_set_selection seat dev serial
 
 data WlrSeatKeyboardState
 
